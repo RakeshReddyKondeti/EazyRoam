@@ -5,11 +5,7 @@ import path from "node:path";
 
 export const fixturesOn = () => process.env.USE_FIXTURES === "1";
 
-/**
- * Return the first fixture that exists, in order. Lets C's draft stand in until the owner's
- * file lands, e.g. ["plan.sample.json" (A), "plan.c-draft.json" (C)].
- * Returns 503 if none exist yet.
- */
+/** Return the first fixture that exists, in order. 503 if none exist yet. */
 export async function fixtureResponse(files: string[], owner: string): Promise<Response> {
   for (const file of files) {
     try {
@@ -24,7 +20,3 @@ export async function fixtureResponse(files: string[], owner: string): Promise<R
     { status: 503 },
   );
 }
-
-/** Real code path not wired yet: returned until the contract functions land. */
-export const notWired = (what: string) =>
-  Response.json({ error: `${what} is not wired yet. Set USE_FIXTURES=1 for now.` }, { status: 501 });

@@ -1,2 +1,2 @@
-// Owner: see PLAN.md §2. Replace this placeholder with real exports.
-export {};
+export { parseRequest, keywordParse } from "./parse";
+export { explainChange, templateExplain } from "./explain";
