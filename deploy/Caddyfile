@@ -1,0 +1,5 @@
+# HTTPS for the domain; certificates are issued and renewed automatically. Owner: B.
+{$DOMAIN}, www.{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:3000
+}

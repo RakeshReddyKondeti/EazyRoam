@@ -1,0 +1,109 @@
+[
+  {
+    "id": "lunch-1",
+    "name": "Draft Lunch Café",
+    "category": "lunch",
+    "location": {
+      "lat": 42.3192,
+      "lng": -72.6305
+    },
+    "address": "Main St, Northampton, MA",
+    "hours": [
+      {
+        "open": "2026-11-14T08:00:00-05:00",
+        "close": "2026-11-14T21:00:00-05:00"
+      }
+    ],
+    "access": {
+      "entrance": "yes",
+      "restroom": "yes",
+      "seating": "yes",
+      "parking": "limited"
+    },
+    "overall": "yes",
+    "sources": [
+      "google",
+      "osm"
+    ]
+  },
+  {
+    "id": "gift-1",
+    "name": "Draft Gift Shop",
+    "category": "gift shop",
+    "location": {
+      "lat": 42.3185,
+      "lng": -72.6322
+    },
+    "address": "Main St, Northampton, MA",
+    "phone": "(413) 555-0147",
+    "hours": [
+      {
+        "open": "2026-11-14T10:00:00-05:00",
+        "close": "2026-11-14T19:00:00-05:00"
+      }
+    ],
+    "access": {
+      "entrance": "unknown",
+      "restroom": "unknown",
+      "seating": "unknown",
+      "parking": "unknown"
+    },
+    "overall": "unknown",
+    "sources": [
+      "google"
+    ]
+  },
+  {
+    "id": "gift-2",
+    "name": "Draft Backup Gift Shop",
+    "category": "gift shop",
+    "location": {
+      "lat": 42.3199,
+      "lng": -72.6331
+    },
+    "address": "Center St, Northampton, MA",
+    "hours": [
+      {
+        "open": "2026-11-14T10:00:00-05:00",
+        "close": "2026-11-14T18:00:00-05:00"
+      }
+    ],
+    "access": {
+      "entrance": "yes",
+      "restroom": "limited",
+      "seating": "yes",
+      "parking": "unknown"
+    },
+    "overall": "yes",
+    "sources": [
+      "google",
+      "osm"
+    ]
+  },
+  {
+    "id": "museum-1",
+    "name": "Smith College Museum of Art",
+    "category": "museum",
+    "location": {
+      "lat": 42.3172,
+      "lng": -72.6386
+    },
+    "address": "20 Elm St, Northampton, MA",
+    "hours": [
+      {
+        "open": "2026-11-14T10:00:00-05:00",
+        "close": "2026-11-14T16:00:00-05:00"
+      }
+    ],
+    "access": {
+      "entrance": "yes",
+      "restroom": "yes",
+      "seating": "limited",
+      "parking": "yes"
+    },
+    "overall": "yes",
+    "sources": [
+      "google"
+    ]
+  }
+]

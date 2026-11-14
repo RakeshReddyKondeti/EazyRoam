@@ -1,0 +1,33 @@
+{
+  "_note": "Invented response in the documented Places API (New) searchText shape, for B's mapping tests. Dev/test only.",
+  "places": [
+    {
+      "id": "sample-museum",
+      "displayName": { "text": "Sample Museum", "languageCode": "en" },
+      "location": { "latitude": 42.3172, "longitude": -72.6386 },
+      "formattedAddress": "20 Elm St, Northampton, MA 01063, USA",
+      "nationalPhoneNumber": "(413) 555-0100",
+      "utcOffsetMinutes": -300,
+      "primaryTypeDisplayName": { "text": "Art museum" },
+      "regularOpeningHours": {
+        "periods": [
+          { "open": { "day": 2, "hour": 10, "minute": 0 }, "close": { "day": 2, "hour": 16, "minute": 0 } },
+          { "open": { "day": 6, "hour": 10, "minute": 0 }, "close": { "day": 6, "hour": 16, "minute": 0 } },
+          { "open": { "day": 0, "hour": 12, "minute": 0 }, "close": { "day": 0, "hour": 16, "minute": 0 } }
+        ]
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true,
+        "wheelchairAccessibleParking": false
+      }
+    },
+    {
+      "id": "sample-cafe",
+      "displayName": { "text": "Sample Café" },
+      "location": { "latitude": 42.3195, "longitude": -72.6315 },
+      "formattedAddress": "Main St, Northampton, MA 01060, USA",
+      "utcOffsetMinutes": -300
+    }
+  ]
+}
