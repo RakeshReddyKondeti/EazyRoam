@@ -20,8 +20,8 @@
   --scrim:rgba(22,19,31,.35); --shadow-sm:0 1px 4px rgba(43,37,64,.12); --shadow-lg:0 8px 24px rgba(43,37,64,.18);
 
   /* Type */
-  --font-display:"Fredoka","Atkinson Hyperlegible Next",system-ui,sans-serif;
-  --font-body:"Atkinson Hyperlegible Next",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:var(--font-fredoka,"Fredoka"),var(--font-atkinson,"Atkinson Hyperlegible Next"),system-ui,sans-serif;
+  --font-body:var(--font-atkinson,"Atkinson Hyperlegible Next"),system-ui,-apple-system,"Segoe UI",sans-serif;
   --text-xs:.8rem; --text-sm:.9rem; --text-md:1.05rem; --text-lg:1.2rem; --text-xl:1.3rem;
   --text-2xl:clamp(1.8rem,6vw,2.2rem); --text-score:2.2rem;
   --leading:1.5; --leading-tight:1.15;
