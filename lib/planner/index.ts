@@ -1,2 +1,3 @@
-// Owner: see PLAN.md §2. Replace this placeholder with real exports.
-export {};
+export { makePlan, solve } from "./solve";
+export { replan } from "./events";
+export { comparePlan } from "./compare";

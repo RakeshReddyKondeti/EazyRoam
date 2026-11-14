@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Plan } from "@/lib/types";
 import { DayList } from "@/components/DayList";
-import draft from "@/fixtures/plan.c-draft.json";
+import draft from "@/fixtures/plan.sample.json";
 
 const plan = draft as unknown as Plan;
 const html = renderToStaticMarkup(<DayList plan={plan} />);

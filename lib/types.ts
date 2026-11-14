@@ -65,6 +65,8 @@ export type Plan = {
   endAt: string;
   problems: number;
   explanation?: string;
+  /** Carried across re-plans so earlier events still apply (set by A's replan). */
+  constraints?: { excludedPlaceIds: string[]; blockedStops: string[] };
 };
 
 export type Event =
