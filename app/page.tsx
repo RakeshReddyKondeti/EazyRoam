@@ -1,61 +1,99 @@
 "use client";
 
-// Scaffold screen: proves the stylesheet, fonts and the /api/plan fixture path work.
-// C replaces this with the ported prototype screens (PLAN.md §8, Person C).
 import { useState } from "react";
-import type { Plan } from "@/lib/types";
+import type { Needs, Plan } from "@/lib/types";
+import { AskForm } from "@/components/AskForm";
+import { DayList } from "@/components/DayList";
+import { fmtTime } from "@/components/format";
+import { Icon, IconSprite } from "@/components/Icons";
 
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+type Screen = "ask" | "day";
+type View = "list" | "map";
 
 export default function Home() {
+  const [screen, setScreen] = useState<Screen>("ask");
+  const [view, setView] = useState<View>("list");
   const [plan, setPlan] = useState<Plan | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function planDay() {
+  async function planDay(text: string, needs: Needs) {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/plan", { method: "POST", body: "{}" });
+      // TODO(C): send origin/home from browser geolocation once /api/plan is wired to parseRequest.
+      const res = await fetch("/api/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, needs }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setPlan(data as Plan);
+      setView("list");
+      setScreen("day");
+      window.scrollTo({ top: 0 });
     } catch (e) {
-      setPlan(null);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
 
+  const unknowns = plan?.stops.filter((s) => s.status === "unknown").length ?? 0;
+
   return (
     <div className="app">
+      <IconSprite />
       <div className="topbar">
-        <div className="brand">EazyRoam</div>
+        <div className="brand">
+          <Icon name="roll" />
+          EazyRoam
+        </div>
       </div>
-      <main id="ask">
-        <div>
-          <h1>Where to today?</h1>
-          <p className="sub">Tell us your plans. We’ll check every door, bus and sidewalk.</p>
-        </div>
-        <button className="primary" onClick={planDay} disabled={busy}>
-          {busy ? "Planning…" : "Plan my day"}
-        </button>
-        <div aria-live="polite">
-          {error && <p className="note-line">{error}</p>}
-          {plan && (
-            <ol className="list">
-              {plan.stops.map((s) => (
-                <li key={s.placeId} className="home">
-                  <span className="t">{time(s.arrive)}</span>
-                  <span>{plan.places[s.placeId]?.name ?? s.placeId}</span>
-                </li>
-              ))}
-            </ol>
+
+      {screen === "ask" && (
+        <>
+          <AskForm busy={busy} onSubmit={planDay} />
+          <div aria-live="polite">{error && <p className="note-line">{error}</p>}</div>
+        </>
+      )}
+
+      {screen === "day" && plan && (
+        <main id="day">
+          <button className="back" onClick={() => setScreen("ask")}>
+            <Icon name="back" />
+            Edit plans
+          </button>
+          <h1>Your day</h1>
+          <p className="sub">
+            {plan.stops.length} stops · {unknowns ? `${unknowns} to call ahead` : "step-free all the way"} · home
+            by {fmtTime(plan.endAt)}
+          </p>
+          <div className="bar">
+            <div className="seg" role="tablist" aria-label="View">
+              <button role="tab" aria-selected={view === "list"} onClick={() => setView("list")}>
+                List
+              </button>
+              <button role="tab" aria-selected={view === "map"} onClick={() => setView("map")}>
+                Map
+              </button>
+            </div>
+          </div>
+          {plan.explanation && (
+            <div className="note-line" aria-live="polite">
+              {plan.explanation}
+            </div>
           )}
-        </div>
-      </main>
+          {view === "list" ? (
+            <DayList plan={plan} />
+          ) : (
+            <p className="hint" style={{ marginTop: 24 }}>
+              Map view is coming next (MapView).
+            </p>
+          )}
+        </main>
+      )}
     </div>
   );
 }

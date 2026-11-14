@@ -3,6 +3,6 @@
 import { fixtureResponse, notWired, fixturesOn } from "../_lib/fixtures";
 
 export async function POST() {
-  if (fixturesOn()) return fixtureResponse("plan.sample.json", "A");
+  if (fixturesOn()) return fixtureResponse(["plan.sample.json", "plan.c-draft.json"], "A");
   return notWired("POST /api/plan");
 }

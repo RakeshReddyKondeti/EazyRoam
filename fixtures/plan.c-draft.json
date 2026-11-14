@@ -1,0 +1,141 @@
+{
+  "_note": "Person C's DEV-ONLY draft so the UI can be built before A's plan.sample.json lands. Accessibility values are invented for UI states. Delete once A's fixture is on main.",
+  "id": "draft-amherst-noho",
+  "request": {
+    "wants": [
+      { "category": "lunch", "query": "lunch restaurant" },
+      { "category": "gift shop", "query": "gift shop" },
+      { "category": "museum", "query": "Smith College Museum of Art" }
+    ],
+    "start": "2026-11-14T11:00:00-05:00",
+    "end": "2026-11-14T18:00:00-05:00",
+    "origin": { "lat": 42.3868, "lng": -72.5301 },
+    "home": { "lat": 42.3868, "lng": -72.5301 },
+    "needs": { "noSteps": true, "gentleSlopes": true, "restroom": false }
+  },
+  "places": {
+    "lunch-1": {
+      "id": "lunch-1",
+      "name": "Draft Lunch Café",
+      "category": "lunch",
+      "location": { "lat": 42.3192, "lng": -72.6305 },
+      "address": "Main St, Northampton, MA",
+      "hours": [{ "open": "2026-11-14T08:00:00-05:00", "close": "2026-11-14T21:00:00-05:00" }],
+      "access": { "entrance": "yes", "restroom": "yes", "seating": "yes", "parking": "limited" },
+      "overall": "yes",
+      "sources": ["google", "osm"]
+    },
+    "gift-1": {
+      "id": "gift-1",
+      "name": "Draft Gift Shop",
+      "category": "gift shop",
+      "location": { "lat": 42.3185, "lng": -72.6322 },
+      "address": "Main St, Northampton, MA",
+      "phone": "(413) 555-0147",
+      "hours": [{ "open": "2026-11-14T10:00:00-05:00", "close": "2026-11-14T19:00:00-05:00" }],
+      "access": { "entrance": "unknown", "restroom": "unknown", "seating": "unknown", "parking": "unknown" },
+      "overall": "unknown",
+      "sources": ["google"]
+    },
+    "gift-2": {
+      "id": "gift-2",
+      "name": "Draft Backup Gift Shop",
+      "category": "gift shop",
+      "location": { "lat": 42.3199, "lng": -72.6331 },
+      "address": "Center St, Northampton, MA",
+      "hours": [{ "open": "2026-11-14T10:00:00-05:00", "close": "2026-11-14T18:00:00-05:00" }],
+      "access": { "entrance": "yes", "restroom": "limited", "seating": "yes", "parking": "unknown" },
+      "overall": "yes",
+      "sources": ["google", "osm"]
+    },
+    "museum-1": {
+      "id": "museum-1",
+      "name": "Smith College Museum of Art",
+      "category": "museum",
+      "location": { "lat": 42.3172, "lng": -72.6386 },
+      "address": "20 Elm St, Northampton, MA",
+      "hours": [{ "open": "2026-11-14T10:00:00-05:00", "close": "2026-11-14T16:00:00-05:00" }],
+      "access": { "entrance": "yes", "restroom": "yes", "seating": "limited", "parking": "yes" },
+      "overall": "yes",
+      "sources": ["google"]
+    }
+  },
+  "stops": [
+    {
+      "placeId": "lunch-1",
+      "arrive": "2026-11-14T11:55:00-05:00",
+      "depart": "2026-11-14T12:55:00-05:00",
+      "status": "ok",
+      "reasons": []
+    },
+    {
+      "placeId": "gift-1",
+      "arrive": "2026-11-14T13:05:00-05:00",
+      "depart": "2026-11-14T13:40:00-05:00",
+      "status": "unknown",
+      "reasons": ["No accessibility data for this place."],
+      "backupId": "gift-2"
+    },
+    {
+      "placeId": "museum-1",
+      "arrive": "2026-11-14T13:55:00-05:00",
+      "depart": "2026-11-14T15:40:00-05:00",
+      "status": "ok",
+      "reasons": []
+    }
+  ],
+  "legs": [
+    {
+      "fromId": "home",
+      "toId": "lunch-1",
+      "mode": "bus",
+      "departAt": "2026-11-14T11:05:00-05:00",
+      "arriveAt": "2026-11-14T11:50:00-05:00",
+      "minutes": 45,
+      "polyline": "",
+      "stops": [
+        { "name": "Haigis Mall", "location": { "lat": 42.3866, "lng": -72.5298 }, "wheelchair": "yes" },
+        { "name": "Pulaski Park", "location": { "lat": 42.3189, "lng": -72.6311 }, "wheelchair": "yes" }
+      ],
+      "issues": []
+    },
+    {
+      "fromId": "lunch-1",
+      "toId": "gift-1",
+      "mode": "roll",
+      "departAt": "2026-11-14T12:55:00-05:00",
+      "arriveAt": "2026-11-14T13:05:00-05:00",
+      "minutes": 10,
+      "polyline": "",
+      "stops": [],
+      "issues": []
+    },
+    {
+      "fromId": "gift-1",
+      "toId": "museum-1",
+      "mode": "roll",
+      "departAt": "2026-11-14T13:40:00-05:00",
+      "arriveAt": "2026-11-14T13:55:00-05:00",
+      "minutes": 15,
+      "polyline": "",
+      "stops": [],
+      "issues": ["Gentle slope on Elm St"]
+    },
+    {
+      "fromId": "museum-1",
+      "toId": "home",
+      "mode": "bus",
+      "departAt": "2026-11-14T15:50:00-05:00",
+      "arriveAt": "2026-11-14T16:35:00-05:00",
+      "minutes": 45,
+      "polyline": "",
+      "stops": [
+        { "name": "Pulaski Park", "location": { "lat": 42.3189, "lng": -72.6311 }, "wheelchair": "yes" },
+        { "name": "Haigis Mall", "location": { "lat": 42.3866, "lng": -72.5298 }, "wheelchair": "yes" }
+      ],
+      "issues": []
+    }
+  ],
+  "endAt": "2026-11-14T16:40:00-05:00",
+  "problems": 0
+}

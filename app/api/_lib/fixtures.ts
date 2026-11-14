@@ -5,17 +5,24 @@ import path from "node:path";
 
 export const fixturesOn = () => process.env.USE_FIXTURES === "1";
 
-/** Read a fixture by file name. Returns a 503 Response if the owner hasn't committed it yet. */
-export async function fixtureResponse(file: string, owner: string): Promise<Response> {
-  try {
-    const raw = await readFile(path.join(process.cwd(), "fixtures", file), "utf8");
-    return Response.json(JSON.parse(raw));
-  } catch {
-    return Response.json(
-      { error: `fixtures/${file} not found yet (owner: ${owner}, see PLAN.md §4)` },
-      { status: 503 },
-    );
+/**
+ * Return the first fixture that exists, in order. Lets C's draft stand in until the owner's
+ * file lands, e.g. ["plan.sample.json" (A), "plan.c-draft.json" (C)].
+ * Returns 503 if none exist yet.
+ */
+export async function fixtureResponse(files: string[], owner: string): Promise<Response> {
+  for (const file of files) {
+    try {
+      const raw = await readFile(path.join(process.cwd(), "fixtures", file), "utf8");
+      return Response.json(JSON.parse(raw));
+    } catch {
+      // try the next one
+    }
   }
+  return Response.json(
+    { error: `fixtures/${files[0]} not found yet (owner: ${owner}, see PLAN.md §4)` },
+    { status: 503 },
+  );
 }
 
 /** Real code path not wired yet: returned until the contract functions land. */
