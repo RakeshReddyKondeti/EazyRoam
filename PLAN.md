@@ -74,29 +74,30 @@ export type Event =
 ```
 
 ### `lib/contracts.ts` (who implements what)
+The source of truth is [`lib/contracts.ts`](lib/contracts.ts). In short:
 ```ts
 // B implements (lib/data, lib/db)
-findCandidates(want: Want, near: LatLng, needs: Needs): Promise<Place[]>      // top 3, access merged
-getElevatorOutages(stops: Stop[]): Promise<Set<string>>                      // stop names out now
-cached<T>(key: string, ttlSec: number, fn: () => Promise<T>): Promise<T>     // Atlas cache
-addReport(r: { placeId?: string; stopName?: string; kind: string }): Promise<void>
-getReports(placeIds: string[]): Promise<Record<string, string[]>>
-recordEvent(e: { kind: string; subject: string; at: Date }): Promise<void>   // Tiger
-getReliability(stopNames: string[]): Promise<Record<string, number>>         // Tiger
+findCandidates(want, near, needs, date): Promise<Place[]>         // ranked, NOT filtered by access; hours for `date`
+geocode(q): Promise<LatLng & { label }>                             // typed start address → coordinates
+getElevatorOutages(stops): Promise<Set<string>>                     // MBTA live; others: none
+cached<T>(key, ttlSec, fn): Promise<T>                              // Atlas, or memory without MONGODB_URI
+addReport(r), getReports(placeIds)                                  // Atlas, 24 h window
+recordEvent(e), getReliability(stopNames)                           // Tiger Data
 
 // A implements (lib/planner, lib/routing)
-buildLeg(from: Place | LatLng, to: Place | LatLng, departAt: string, needs: Needs): Promise<Leg>
-makePlan(req: Request, deps: Deps): Promise<Plan>
-replan(plan: Plan, event: Event, now: string, deps: Deps): Promise<Plan>
-comparePlan(req: Request, deps: Deps): Promise<Plan>                         // "normal map app" + its problems
+buildLeg(from, to, departAt, needs, deps, opts?: { accessible?, blockedStops? }): Promise<Leg>
+makePlan(req, deps, constraints?): Promise<Plan>
+replan(plan, event, now, deps): Promise<Plan>
+comparePlan(req, deps): Promise<Plan>                               // "normal map app" + its problems
 
 // C implements (lib/ai)
-parseRequest(text: string, needs: Needs, origin: LatLng, home: LatLng): Promise<Request>
-explainChange(before: Plan, after: Plan, event: Event): Promise<string>
+parseRequest(text, needs, origin, home, { date, offset }): Promise<Request>
+explainChange(before, after, event): Promise<string>
 
-// Deps = the B functions A needs, injected so tests can pass fakes
-export type Deps = { findCandidates; getElevatorOutages; getReliability; getReports; cached };
+// Deps = the B functions A needs, injected so tests can pass fakes (incl. an optional buildLeg)
+type Deps = { findCandidates; getElevatorOutages; getReliability; getReports; cached; buildLeg? };
 ```
+Changes made while building (A, B and C should review them): `Plan.constraints` (re-plans remember earlier events), `date` on `findCandidates`, `{ date, offset }` on `parseRequest`, `opts` on `buildLeg` (Compare uses `accessible: false`), `geocode`, and `Deps.buildLeg`. The real `Deps` live in `lib/deps.ts`.
 
 **How to change a contract:**
 1. Post in the team chat.
@@ -108,9 +109,10 @@ Nobody edits contracts inside a feature branch.
 ### API routes (C writes them; each is a thin wrapper around A's functions)
 | Route | Body → Response |
 |---|---|
-| `POST /api/plan` | `{ text, needs, origin, home }` → `Plan` (calls `parseRequest` → `makePlan`) |
+| `POST /api/plan` | `{ text, needs, origin? or startAddress?, home?, date, offset }` → `Plan` (calls `geocode` if needed → `parseRequest` → `makePlan`) |
 | `POST /api/replan` | `{ plan, event, now }` → `Plan` (calls `replan`, `explainChange`, `addReport`/`recordEvent`) |
 | `POST /api/compare` | `{ request }` → `Plan` (calls `comparePlan`) |
+| `GET /api/geocode?q=` | → `{ lat, lng, label }` (calls `geocode`) |
 
 ## 4. Fixtures and stubs (so nobody waits)
 - `fixtures/request.sample.json`, `fixtures/places.sample.json`, `fixtures/legs.sample.json`, `fixtures/plan.sample.json` and `fixtures/plan.compare.json` are hand-written in hour 0 from the types. Use a real Amherst → Northampton day.
@@ -130,11 +132,13 @@ Nobody edits contracts inside a feature branch.
 ## 6. Environment variables (`.env.example`)
 ```
 GEMINI_API_KEY=
+GEMINI_MODEL=                 # optional, default gemini-3.5-flash-lite
 GOOGLE_MAPS_API_KEY=          # Places (New) + Routes
 ORS_API_KEY=
 TRANSITLAND_API_KEY=
 MBTA_API_KEY=
 MONGODB_URI=
+MONGODB_DB=                   # optional, default eazyroam
 TIGER_DATABASE_URL=           # Postgres connection string
 USE_FIXTURES=0
 ```
