@@ -34,21 +34,32 @@ export function MapView({ plan }: { plan: Plan }) {
   // Create the map once.
   useEffect(() => {
     let cancelled = false;
+    let loaded = false;
+    // If the map hasn't loaded in 15 s (blocked tiles, no WebGL), say so instead of showing a blank box.
+    const timer = setTimeout(() => !cancelled && !loaded && setFailed(true), 15000);
     (async () => {
       try {
         const ml = await import("maplibre-gl");
         if (cancelled || !box.current) return;
+        // MapLibre v6 computes its worker URL at runtime, which the bundler can't serve;
+        // scripts/copy-map-worker.mjs puts the worker in public/ before dev and build.
+        ml.setWorkerUrl("/maplibre-gl-worker.mjs");
         const m = new ml.Map({ container: box.current, style: STYLE, center: [plan.request.origin.lng, plan.request.origin.lat], zoom: 12, attributionControl: { compact: true } });
         m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
-        m.on("load", () => !cancelled && setReady(true));
+        m.on("load", () => {
+          loaded = true;
+          if (!cancelled) setReady(true);
+        });
         m.on("error", (e) => console.warn("map:", e.error?.message));
         map.current = m;
-      } catch {
+      } catch (e) {
+        console.warn("map failed to start:", e);
         setFailed(true);
       }
     })();
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       map.current?.remove();
       map.current = null;
     };
