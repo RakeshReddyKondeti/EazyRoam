@@ -3,7 +3,13 @@ import { fmtTime } from "./format";
 import { LegRow } from "./LegRow";
 import { StopRow } from "./StopRow";
 
-type Props = { plan: Plan; newIds?: Set<string> };
+type Props = {
+  plan: Plan;
+  newIds?: Set<string>;
+  endLabel?: string; // "Home" (Today) or "Back to where you’re staying" (Vacation)
+  visited?: Set<string>;
+  onVisited?: (placeId: string, v: boolean) => void;
+};
 
 /** Keys DayList uses for highlighting changed rows: stop = placeId, leg = "leg:<from>><to>". */
 export const legKey = (fromId: string, toId: string) => `leg:${fromId}>${toId}`;
@@ -20,7 +26,7 @@ export function changedIds(prev: Plan | null, next: Plan): Set<string> {
 }
 
 /** The day as a timeline (.list): leg, stop, leg, stop … then home. */
-export function DayList({ plan, newIds }: Props) {
+export function DayList({ plan, newIds, endLabel = "Home", visited, onVisited }: Props) {
   const rows: React.ReactNode[] = [];
   let prev = "home";
   const legFor = (from: string, to: string) => plan.legs.find((l) => l.fromId === from && l.toId === to);
@@ -35,6 +41,8 @@ export function DayList({ plan, newIds }: Props) {
         place={plan.places[s.placeId]}
         backup={s.backupId ? plan.places[s.backupId] : undefined}
         isNew={newIds?.has(s.placeId)}
+        visited={visited?.has(s.placeId)}
+        onVisited={onVisited ? (v) => onVisited(s.placeId, v) : undefined}
       />,
     );
     prev = s.placeId;
@@ -44,7 +52,7 @@ export function DayList({ plan, newIds }: Props) {
   rows.push(
     <li key="end" className="home">
       <span className="t">{fmtTime(plan.endAt)}</span>
-      <span>Home</span>
+      <span>{endLabel}</span>
     </li>,
   );
 

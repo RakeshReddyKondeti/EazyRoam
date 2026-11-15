@@ -94,6 +94,7 @@ export function mapPlace(g: GPlace, category: string, date: string): Place {
     access,
     overall: access.entrance,
     sources: ["google"],
+    kind: g.primaryTypeDisplayName?.text,
   };
 }
 

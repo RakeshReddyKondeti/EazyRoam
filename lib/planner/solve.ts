@@ -46,7 +46,7 @@ type Visit = { arrive: string; depart: string; reasons: string[]; late: boolean 
 
 /** Arrival at `t`: wait for opening, check the visit fits before closing. */
 function visit(place: Place, t: string): Visit {
-  const len = visitMinutes(place.category);
+  const len = visitMinutes(`${place.category} ${place.kind ?? ""}`);
   const w = windowFor(place, t);
   if (w === "unlisted") return { arrive: t, depart: addMin(t, len), reasons: ["Opening hours not listed"], late: false };
   if (!w) return { arrive: t, depart: addMin(t, len), reasons: ["Closed by the time you arrive"], late: true };

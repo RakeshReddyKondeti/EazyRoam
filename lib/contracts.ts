@@ -1,6 +1,6 @@
 // Shared contract: PLAN.md §3. Who implements what, as TypeScript types.
 // A: lib/planner + lib/routing · B: lib/data + lib/db · C: lib/ai
-import type { Event, LatLng, Leg, Needs, Place, Plan, Request, Stop, Want } from "./types";
+import type { Event, LatLng, Leg, Needs, Place, Plan, Request, Stop, Trip, TripInput, Want } from "./types";
 
 // ---- B implements (lib/data, lib/db) ----
 /** Ranked candidates for one want (relevance order, NOT filtered by access). Hours are for `date`. */
@@ -37,6 +37,8 @@ export type BuildLeg = (
 export type MakePlan = (req: Request, deps: Deps, constraints?: Plan["constraints"]) => Promise<Plan>;
 export type Replan = (plan: Plan, event: Event, now: string, deps: Deps) => Promise<Plan>;
 export type ComparePlan = (req: Request, deps: Deps) => Promise<Plan>;
+/** Vacation mode: find each place, leave out inaccessible ones, split into days, plan each day. */
+export type PlanTrip = (input: TripInput, deps: Deps) => Promise<Trip>;
 
 // ---- C implements (lib/ai) ----
 export type ParseCtx = { date: string; offset: string }; // "2026-11-14", "-05:00"

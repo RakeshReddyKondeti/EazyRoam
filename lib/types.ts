@@ -27,6 +27,8 @@ export type Place = {
   access: { entrance: Access; restroom: Access; seating: Access; parking: Access };
   overall: Access;
   sources: ("google" | "osm" | "report")[];
+  /** Google's place type, e.g. "Art museum" (helps estimate visit length). */
+  kind?: string;
 };
 
 export type Stop = {
@@ -74,3 +76,23 @@ export type Event =
   | { type: "elevatorOut"; stopName: string }
   | { type: "late"; minutes: number }
   | { type: "addStop"; category: string };
+
+// ---- Vacation mode ----
+export type TripInput = {
+  places: string[]; // names the user typed, e.g. "New England Aquarium"
+  days: number; // 1, 3 or 7
+  origin: LatLng; // where they're staying
+  needs: Needs;
+  date: string; // first day, YYYY-MM-DD
+  offset: string; // "-05:00"
+};
+export type TripDay = { date: string; plan: Plan };
+export type Trip = {
+  id: string;
+  title: string; // "3-day trip"
+  input: TripInput;
+  dayPlans: TripDay[];
+  leftOut: { place: Place; reason: string }[]; // found but not accessible
+  notFound: string[]; // names we couldn't find
+  freeDays: number;
+};

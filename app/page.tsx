@@ -2,13 +2,16 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import type { Event, Needs, Plan } from "@/lib/types";
+import type { Event, Needs, Plan, Trip } from "@/lib/types";
 import { AskForm, type Start } from "@/components/AskForm";
 import { ChangeSheet } from "@/components/ChangeSheet";
 import { CompareView } from "@/components/CompareView";
 import { DayList, changedIds } from "@/components/DayList";
 import { fmtTime } from "@/components/format";
 import { Icon, IconSprite } from "@/components/Icons";
+import { type SavedTrip, loadTrips, storeTrips, upsertTrip } from "@/components/savedTrips";
+import { TripView } from "@/components/TripView";
+import { type TripRequest, VacationSetup } from "@/components/VacationSetup";
 
 // MapLibre touches window: load it only in the browser.
 const MapView = dynamic(() => import("@/components/MapView").then((m) => m.MapView), {
@@ -16,7 +19,7 @@ const MapView = dynamic(() => import("@/components/MapView").then((m) => m.MapVi
   loading: () => <p className="hint" style={{ marginTop: 24 }}>Loading map…</p>,
 });
 
-type Screen = "ask" | "day" | "compare";
+type Screen = "ask" | "day" | "compare" | "vac" | "trip";
 type View = "list" | "map";
 
 /** The user's local date and UTC offset, e.g. "2026-11-14", "-05:00". */
@@ -43,9 +46,55 @@ export default function Home() {
   const [normal, setNormal] = useState<Plan | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState<"" | "plan" | "replan" | "compare">("");
+  const [busy, setBusy] = useState<"" | "plan" | "replan" | "compare" | "trip">("");
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [tripSaved, setTripSaved] = useState(false);
+  const [visited, setVisited] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<SavedTrip[]>([]);
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
+  const go = (s: Screen) => {
+    if (s === "vac") setSaved(loadTrips()); // browser-only; read on demand
+    setError("");
+    setScreen(s);
+    window.scrollTo({ top: 0 });
+  };
+
+  async function planTrip(r: TripRequest) {
+    setBusy("trip");
+    setError("");
+    try {
+      const { date, offset } = localDateAndOffset();
+      const t = await post<Trip>("/api/trip", { places: r.places, days: r.days, needs: r.needs, origin: r.start.origin, startAddress: r.start.address, date, offset });
+      setTrip(t);
+      setTripSaved(false);
+      setVisited(new Set());
+      go("trip");
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function saveTrip() {
+    if (!trip) return;
+    upsertTrip({ trip, savedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }), visited: [...visited] });
+    setSaved(loadTrips());
+    setTripSaved(true);
+  }
+
+  function toggleVisited(key: string, v: boolean) {
+    const next = new Set(visited);
+    if (v) next.add(key);
+    else next.delete(key);
+    setVisited(next);
+    if (trip && tripSaved) {
+      const s = loadTrips().find((x) => x.trip.id === trip.id);
+      if (s) upsertTrip({ ...s, visited: [...next] });
+      setSaved(loadTrips());
+    }
+  }
 
   async function planDay(text: string, needs: Needs, start: Start) {
     setBusy("plan");
@@ -109,6 +158,16 @@ export default function Home() {
           <Icon name="roll" />
           EazyRoam
         </div>
+        {(screen === "ask" || screen === "vac") && (
+          <div className="seg modes" role="tablist" aria-label="Mode">
+            <button role="tab" aria-selected={screen === "ask"} onClick={() => go("ask")}>
+              Today
+            </button>
+            <button role="tab" aria-selected={screen === "vac"} onClick={() => go("vac")}>
+              Vacation
+            </button>
+          </div>
+        )}
       </div>
 
       <div aria-live="assertive">{error && <p className="note-line error-line">{error}</p>}</div>
@@ -156,6 +215,28 @@ export default function Home() {
           <p className="sub">What a normal map app suggests, checked the way EazyRoam checks everything.</p>
           {normal ? <CompareView normal={normal} mine={plan} /> : <p className="hint" style={{ marginTop: 24 }}>{busy === "compare" ? "Building the normal plan…" : ""}</p>}
         </main>
+      )}
+
+      {screen === "vac" && (
+        <VacationSetup
+          busy={busy === "trip"}
+          saved={saved}
+          onSubmit={planTrip}
+          onOpen={(s) => {
+            setTrip(s.trip);
+            setVisited(new Set(s.visited));
+            setTripSaved(true);
+            go("trip");
+          }}
+          onRemove={(id) => {
+            storeTrips(loadTrips().filter((t) => t.trip.id !== id));
+            setSaved(loadTrips());
+          }}
+        />
+      )}
+
+      {screen === "trip" && trip && (
+        <TripView trip={trip} saved={tripSaved} visited={visited} onVisited={toggleVisited} onSave={saveTrip} onBack={() => go("vac")} />
       )}
     </div>
   );

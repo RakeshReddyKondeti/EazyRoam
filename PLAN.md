@@ -89,6 +89,7 @@ buildLeg(from, to, departAt, needs, deps, opts?: { accessible?, blockedStops? })
 makePlan(req, deps, constraints?): Promise<Plan>
 replan(plan, event, now, deps): Promise<Plan>
 comparePlan(req, deps): Promise<Plan>                               // "normal map app" + its problems
+planTrip({ places, days, origin, needs, date, offset }, deps): Promise<Trip>  // Vacation mode
 
 // C implements (lib/ai)
 parseRequest(text, needs, origin, home, { date, offset }): Promise<Request>
@@ -97,7 +98,7 @@ explainChange(before, after, event): Promise<string>
 // Deps = the B functions A needs, injected so tests can pass fakes (incl. an optional buildLeg)
 type Deps = { findCandidates; getElevatorOutages; getReliability; getReports; cached; buildLeg? };
 ```
-Changes made while building (A, B and C should review them): `Plan.constraints` (re-plans remember earlier events), `date` on `findCandidates`, `{ date, offset }` on `parseRequest`, `opts` on `buildLeg` (Compare uses `accessible: false`), `geocode`, and `Deps.buildLeg`. The real `Deps` live in `lib/deps.ts`.
+Changes made while building (A, B and C should review them): `Plan.constraints` (re-plans remember earlier events), `date` on `findCandidates`, `{ date, offset }` on `parseRequest`, `opts` on `buildLeg` (Compare uses `accessible: false`), `geocode`, `Deps.buildLeg`, and Vacation mode (`Trip` types, `planTrip`, `Place.kind`). The real `Deps` live in `lib/deps.ts`.
 
 **How to change a contract:**
 1. Post in the team chat.
@@ -113,6 +114,7 @@ Nobody edits contracts inside a feature branch.
 | `POST /api/replan` | `{ plan, event, now }` → `Plan` (calls `replan`, `explainChange`, `addReport`/`recordEvent`) |
 | `POST /api/compare` | `{ request }` → `Plan` (calls `comparePlan`) |
 | `GET /api/geocode?q=` | → `{ lat, lng, label }` (calls `geocode`) |
+| `POST /api/trip` | `{ places, days: 1\|3\|7, origin? or startAddress?, needs, date, offset }` → `Trip` (calls `planTrip`) |
 
 ## 4. Fixtures and stubs (so nobody waits)
 - `fixtures/request.sample.json`, `fixtures/places.sample.json`, `fixtures/legs.sample.json`, `fixtures/plan.sample.json` and `fixtures/plan.compare.json` are hand-written in hour 0 from the types. Use a real Amherst → Northampton day.

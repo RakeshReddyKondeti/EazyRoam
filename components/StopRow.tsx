@@ -2,10 +2,18 @@ import type { Place, PlanStop } from "@/lib/types";
 import { accessTone, accessWord, fmtTime, stopStatus } from "./format";
 import { StatusPill } from "./StatusPill";
 
-type Props = { stop: PlanStop; place?: Place; backup?: Place; isNew?: boolean };
+type Props = {
+  stop: PlanStop;
+  place?: Place;
+  backup?: Place;
+  isNew?: boolean;
+  /** Vacation mode: "I've been here" checkbox. */
+  visited?: boolean;
+  onVisited?: (v: boolean) => void;
+};
 
 /** One stop in the day list (.stop). Opens to show per-feature access and any backup. */
-export function StopRow({ stop, place, backup, isNew }: Props) {
+export function StopRow({ stop, place, backup, isNew, visited, onVisited }: Props) {
   const { tone, label } = stopStatus(stop);
   const name = place?.name ?? stop.placeId;
   const parts = place
@@ -17,7 +25,7 @@ export function StopRow({ stop, place, backup, isNew }: Props) {
     : [];
 
   return (
-    <li className={`stop${isNew ? " new fade" : ""}`}>
+    <li className={`stop${isNew ? " new fade" : ""}${visited ? " done" : ""}`}>
       <details>
         <summary>
           <span className="t">{fmtTime(stop.arrive)}</span>
@@ -46,6 +54,12 @@ export function StopRow({ stop, place, backup, isNew }: Props) {
             Until {fmtTime(stop.depart)}
             {place?.address ? ` · ${place.address}` : ""}
           </span>
+          {onVisited && (
+            <label className="visit">
+              <input type="checkbox" checked={!!visited} onChange={(e) => onVisited(e.target.checked)} />
+              I’ve been here
+            </label>
+          )}
         </div>
       </details>
     </li>
