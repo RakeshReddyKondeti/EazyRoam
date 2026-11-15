@@ -8,6 +8,14 @@ export class MissingKeyError extends Error {
   }
 }
 
+/** A problem with what the user asked for (not a server fault); routes return it as a 400 with this message. */
+export class UserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UserError";
+  }
+}
+
 export function requireKey(envVar: string): string {
   const v = process.env[envVar];
   if (!v) throw new MissingKeyError(envVar);
