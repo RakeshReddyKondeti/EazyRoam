@@ -110,7 +110,7 @@ Nobody edits contracts inside a feature branch.
 ### API routes (C writes them; each is a thin wrapper around A's functions)
 | Route | Body → Response |
 |---|---|
-| `POST /api/plan` | `{ text, needs, origin? or startAddress?, home?, date, offset }` → `Plan` (calls `geocode` if needed → `parseRequest` → `makePlan`) |
+| `POST /api/plan` | `{ text, needs, origin? or startAddress?, home? or endAddress?, leaveAt?, doneBy?, date, offset, now }` → `Plan` (calls `geocode` if needed → `parseRequest` → `makePlan`) |
 | `POST /api/replan` | `{ plan, event, now }` → `Plan` (calls `replan`, `explainChange`, `addReport`/`recordEvent`) |
 | `POST /api/compare` | `{ request }` → `Plan` (calls `comparePlan`) |
 | `GET /api/geocode?q=` | → `{ lat, lng, label }` (calls `geocode`) |
@@ -134,7 +134,7 @@ Nobody edits contracts inside a feature branch.
 ## 6. Environment variables (`.env.example`)
 ```
 GEMINI_API_KEY=
-GEMINI_MODEL=                 # optional, default gemini-3.5-flash-lite
+GEMINI_MODEL=                 # optional, default gemini-3.1-flash-lite
 GOOGLE_MAPS_API_KEY=          # Places (New) + Routes
 ORS_API_KEY=
 TRANSITLAND_API_KEY=
