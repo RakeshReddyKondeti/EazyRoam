@@ -11,6 +11,8 @@ import { Icon } from "./Icons";
 import { NeedsChips } from "./NeedsChips";
 import type { SavedTrip } from "./savedTrips";
 import { type Start, StartField } from "./StartField";
+import { addDays } from "@/lib/planner/geo";
+import { useToday } from "./useToday";
 
 export const MAX_TRIP_DAYS = 14;
 const SHORTCUTS = [
@@ -20,9 +22,10 @@ const SHORTCUTS = [
 ];
 const STEPS = ["Finding places…", "Checking entrances…", "Sorting your days…", "Checking routes…"];
 const daysLabel = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
+
 const ACCESS_TEXT = { yes: "Accessible entrance", limited: "Partly accessible", no: "Not accessible", unknown: "Access unknown" } as const;
 
-export type TripRequest = { places: string[]; days: number; needs: Needs; start: Start };
+export type TripRequest = { places: string[]; days: number; needs: Needs; start: Start; startDate: string; dayStart: string; dayEnd: string };
 
 type Props = {
   busy: boolean;
@@ -38,6 +41,12 @@ export function VacationSetup({ busy, saved, onSubmit, onOpen, onRemove }: Props
   const [finding, setFinding] = useState(false);
   const [findError, setFindError] = useState("");
   const [days, setDays] = useState(3);
+  const today = useToday();
+  const [picked, setPicked] = useState(""); // "" = today
+  const startDate = picked && picked >= today ? picked : today;
+  const [dayStart, setDayStart] = useState("10:00");
+  const [dayEnd, setDayEnd] = useState("18:00");
+  const badTimes = Boolean(dayStart && dayEnd && dayEnd <= dayStart);
   const [places, setPlaces] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [needs, setNeeds] = useState<Needs>({ noSteps: true, gentleSlopes: true, restroom: false });
@@ -185,13 +194,39 @@ export function VacationSetup({ busy, saved, onSubmit, onOpen, onRemove }: Props
         </div>
       </div>
 
+      <label className="timefield">
+        <span className="label">First day</span>
+        <input className="input" type="date" value={startDate} min={today} max={today ? addDays(today, 365) : undefined} onChange={(e) => setPicked(e.target.value)} />
+        {startDate > today && (
+          <span className="hint" style={{ textAlign: "left", marginTop: 6 }}>
+            Planning ahead? We’ll check hours, routes and elevators again the day before each day.
+          </span>
+        )}
+      </label>
+
+      <div>
+        <div className="timerow">
+          <label className="timefield">
+            <span className="label">Leave each day at</span>
+            <input className="input" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value || "10:00")} />
+          </label>
+          <label className="timefield">
+            <span className="label">Back by</span>
+            <input className="input" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value || "18:00")} aria-invalid={badTimes} />
+          </label>
+        </div>
+        <p className="hint" style={{ textAlign: "left", marginTop: 6 }} aria-live="polite">
+          {badTimes ? "“Back by” has to be later than when you leave." : "You can change the times for any single day later."}
+        </p>
+      </div>
+
       <StartField label="Where you’re staying" placeholder="Hotel or address" value={start} onChange={setStart} />
       <NeedsChips needs={needs} onChange={setNeeds} />
 
       <button
         className="primary"
-        disabled={busy || !places.length}
-        onClick={() => onSubmit({ places, days, needs, start: { origin: start.origin, address: start.address?.trim() || undefined } })}
+        disabled={busy || !places.length || badTimes}
+        onClick={() => onSubmit({ places, days, needs, startDate, dayStart, dayEnd, start: { origin: start.origin, address: start.address?.trim() || undefined } })}
       >
         {busy ? STEPS[step] : places.length ? `Plan my trip (${places.length} place${places.length === 1 ? "" : "s"})` : "Plan my trip"}
       </button>

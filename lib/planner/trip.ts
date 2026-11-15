@@ -1,12 +1,12 @@
 // planTrip(): Vacation mode. Find each named place, leave out inaccessible ones,
-// group the rest into days by geography, then plan each day with the same solver as Today. Owner: A.
+// group the rest into days by geography, then plan each day with the same solver. Owner: A.
 import type { PlanTrip } from "../contracts";
 import type { LatLng, Place, Trip } from "../types";
 import { addDays, meters } from "./geo";
 import { solve } from "./solve";
 
-const DAY_START = "10:00";
-const DAY_END = "20:00";
+export const DAY_START = "10:00";
+export const DAY_END = "20:00";
 
 export { addDays } from "./geo";
 
@@ -68,6 +68,8 @@ export const tripTitle = (days: number) => (days % 7 === 0 ? `${days / 7}-week t
 
 export const planTrip: PlanTrip = async (input, deps) => {
   const { places: names, days, origin, needs, date, offset, startLabel } = input;
+  const dayStart = input.dayStart ?? DAY_START;
+  const dayEnd = input.dayEnd ?? DAY_END;
 
   // 1. Find each place (top search result near where they're staying).
   const found = await Promise.all(
@@ -96,8 +98,8 @@ export const planTrip: PlanTrip = async (input, deps) => {
       const plan = await solve(
         {
           wants: g.map((x) => ({ category: x.place.category, query: x.name, placeId: x.place.id })),
-          start: `${day}T${DAY_START}:00${offset}`,
-          end: `${day}T${DAY_END}:00${offset}`,
+          start: `${day}T${dayStart}:00${offset}`,
+          end: `${day}T${dayEnd}:00${offset}`,
           origin,
           home: origin,
           needs,
@@ -113,3 +115,4 @@ export const planTrip: PlanTrip = async (input, deps) => {
   const trip: Trip = { id: crypto.randomUUID(), title, input, dayPlans, leftOut, notFound, freeDays: Math.max(0, days - dayPlans.length) };
   return trip;
 };
+

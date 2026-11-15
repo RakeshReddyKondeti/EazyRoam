@@ -12,6 +12,7 @@ const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
 /** Where a leg starts or ends. "home" is the start for a first leg and the end location for a last leg. */
 function endpoint(plan: Plan, id: string, side: "from" | "to"): LatLng {
+  if (id === "here") return plan.request.origin; // re-planned from a live location; real legs carry a polyline
   if (id === "home") return side === "from" ? plan.request.origin : plan.request.home;
   return plan.places[id]?.location ?? plan.request.origin;
 }
@@ -25,10 +26,12 @@ function pin(className: string, text: string, label: string, onClick?: () => voi
   return el;
 }
 
-export function MapView({ plan }: { plan: Plan }) {
+/** `me`: the phone's location on a live day, shown as a "you are here" dot. */
+export function MapView({ plan, me }: { plan: Plan; me?: LatLng }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const markers = useRef<MlMarker[]>([]);
+  const meMarker = useRef<MlMarker | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState(plan.stops[0]?.placeId);
@@ -113,6 +116,27 @@ export function MapView({ plan }: { plan: Plan }) {
       alive = false;
     };
   }, [plan, ready]);
+
+  // Move the "you are here" dot without redrawing the plan.
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    if (!me) {
+      meMarker.current?.remove();
+      meMarker.current = null;
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const ml = await import("maplibre-gl");
+      if (!alive) return;
+      if (meMarker.current) meMarker.current.setLngLat([me.lng, me.lat]);
+      else meMarker.current = new ml.Marker({ element: pin("pin pin-me", "", "You are here") }).setLngLat([me.lng, me.lat]).addTo(m);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [me, ready]);
 
   const idx = plan.stops.findIndex((s) => s.placeId === selected);
   const stop = plan.stops[idx];

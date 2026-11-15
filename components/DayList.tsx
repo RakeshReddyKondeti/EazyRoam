@@ -34,7 +34,9 @@ export function changedIds(prev: Plan | null, next: Plan): Set<string> {
 export function DayList({ plan, newIds, startLabel, endLabel, visited, onVisited, onAdjust, busy }: Props) {
   const rows: React.ReactNode[] = [];
   let prev = "home";
-  const legFor = (from: string, to: string) => plan.legs.find((l) => l.fromId === from && l.toId === to);
+  // A leg re-planned "from where I am" starts at "here", not at the previous stop.
+  const legFor = (from: string, to: string) =>
+    plan.legs.find((l) => l.fromId === from && l.toId === to) ?? plan.legs.find((l) => l.fromId === "here" && l.toId === to);
   const where = plan.request.startLabel ?? "Your starting point";
 
   rows.push(

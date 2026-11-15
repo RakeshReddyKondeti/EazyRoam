@@ -86,6 +86,9 @@ const WEEK = 7 * 86400000;
 export function queryDeparture(departAt: string, now = Date.now()): Date {
   let t = Date.parse(departAt);
   while (t < now + 60000) t += WEEK;
+  // Far-ahead trips (next month): agencies publish schedules only a few weeks out, so ask for the
+  // same weekday and time within the coming week ("a typical Tuesday"). The day is re-checked before you go.
+  while (t > now + 2 * WEEK) t -= WEEK;
   const d = new Date(t);
   d.setUTCMinutes(Math.ceil(d.getUTCMinutes() / 10) * 10, 0, 0); // 10-min buckets share cache
   return d;

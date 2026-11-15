@@ -81,3 +81,33 @@ describe("adjusting a trip day", () => {
     expect(next.stops.map((s) => s.placeId).sort()).toEqual(day.plan.stops.map((s) => s.placeId).sort());
   });
 });
+
+describe("day times", () => {
+  it("each day uses the trip's leave and back-by times", async () => {
+    const trip = await planTrip({ ...input, dayStart: "11:30", dayEnd: "17:00" }, deps);
+    for (const d of trip.dayPlans) {
+      expect(d.plan.request.start).toBe(`${d.date}T11:30:00-05:00`);
+      expect(d.plan.request.end).toBe(`${d.date}T17:00:00-05:00`);
+    }
+  });
+
+  it("one day's times can change on their own (setDay)", async () => {
+    const { replan } = await import("@/lib/planner");
+    const trip = await planTrip(input, deps);
+    const d = trip.dayPlans[0];
+    const next = await replan(d.plan, { type: "setDay", start: "12:00", end: "18:30" }, "2026-11-13T09:00:00-05:00", deps);
+    expect(next.request.start).toBe(`${d.date}T12:00:00-05:00`);
+    expect(next.request.end).toBe(`${d.date}T18:30:00-05:00`);
+    expect(Date.parse(next.legs[0].departAt)).toBeGreaterThanOrEqual(Date.parse(next.request.start));
+  });
+});
+
+describe("compare a trip day", () => {
+  it("the normal-app plan also includes the inaccessible places EazyRoam left out", async () => {
+    const { compareRequest } = await import("@/lib/planner/compareTrip");
+    const trip = await planTrip(input, deps);
+    const all = trip.dayPlans.flatMap((_, i) => compareRequest(trip, i).wants.map((w) => w.placeId));
+    expect(all).toContain("steps-bistro"); // left out by EazyRoam, planned by the normal app
+    expect(all.filter((id) => id === "steps-bistro")).toHaveLength(1); // on exactly one day
+  });
+});

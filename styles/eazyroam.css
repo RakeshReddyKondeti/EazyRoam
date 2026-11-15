@@ -320,3 +320,100 @@ button.pin{cursor:pointer;padding:0}
 .sight-body small{font-size:var(--text-sm);color:var(--muted)}
 .sight-body .achip{align-self:flex-start;display:inline-flex;align-items:center;gap:4px}
 .sight-body .achip svg.i{width:14px;height:14px}
+
+/* ---------- 17. Live day: one step at a time ---------- */
+.start-day{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);width:100%;margin-top:var(--s3)}
+.start-day svg.i{width:20px;height:20px}
+.check{margin-top:var(--s2);padding:var(--s2) var(--s3);border-radius:var(--r-md);background:var(--soft);font-size:var(--text-sm);color:var(--muted)}
+.check p{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--s1) var(--s3);margin:0}
+.check .link{font-size:var(--text-sm)}
+.check.changed{background:var(--butter);color:var(--ink)}
+.check ul{margin:var(--s2) 0 0;padding-left:var(--s5)}
+.check li+li{margin-top:var(--s1)}
+.live-status{margin-top:var(--s3);min-height:22px}
+.live-alert{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);margin-top:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r-lg);color:var(--ink)}
+.live-alert p{margin:0}
+.live-alert.warn{background:var(--butter)}
+.live-alert.ok{background:var(--mint)}
+.now{margin-top:var(--s4);padding:var(--s5) var(--s4);border:2px solid var(--accent);border-radius:var(--r-xl);background:var(--surface)}
+.now.now-end{border-color:var(--ok)}
+.now .label{margin:0 0 var(--s2)}
+.now-kind{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3)}
+.now-time{font-size:var(--text-sm);color:var(--muted);font-variant-numeric:tabular-nums}
+.now-title{margin:var(--s3) 0 0;font-family:var(--font-display);font-weight:600;font-size:clamp(1.4rem,5vw,1.9rem);line-height:1.2}
+.now-detail{margin:var(--s2) 0 0;line-height:1.5}
+.now-detail.tone-ok{color:var(--ok);font-weight:700}
+.now-detail.tone-warn{color:var(--warn);font-weight:700}
+.now-detail.tone-bad{color:var(--bad);font-weight:700}
+.now-actions{display:flex;gap:var(--s3);margin-top:var(--s5)}
+.now-actions .primary{flex:1;margin:0}
+.now-actions .ghost{flex:none}
+.upcoming{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s2)}
+.upcoming li{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) var(--s3);border-radius:var(--r-md);background:var(--soft);font-size:var(--text-sm)}
+.upcoming li > svg.i{flex:none;color:var(--muted)}
+.upcoming li > span:first-of-type{flex:1;min-width:0}
+.upcoming .t{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pin-me{width:18px;height:18px;border-radius:50%;background:#2F7BF6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,123,246,.25)}
+#live section[aria-label="Later"]{margin-top:var(--s5)}
+.daytimes{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--s1) var(--s3);margin:var(--s2) 0 0 var(--s1);font-size:var(--text-sm);color:var(--muted)}
+
+/* Live track: previous → now → next, joined by a rail. New cards animate in the direction you moved. */
+.progress{height:6px;margin-top:var(--s4);border-radius:var(--r-pill);background:var(--soft);overflow:hidden}
+.progress span{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .45s var(--ease)}
+.progress-text{margin:6px 0 0;font-size:var(--text-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.livetrack{position:relative;list-style:none;margin:var(--s3) 0 0;padding:0 0 0 30px;display:flex;flex-direction:column;gap:var(--s3)}
+.livetrack::before{content:"";position:absolute;left:11px;top:14px;bottom:14px;width:2px;border-radius:2px;background:var(--line)}
+.tk{position:relative}
+.tk-dot{position:absolute;left:-30px;top:12px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:var(--bg);font-size:12px;font-weight:700;color:var(--ok)}
+.tk-prev .tk-dot{border-color:var(--ok);background:var(--mint)}
+.tk-now .tk-dot{top:22px;border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 5px var(--lilac)}
+.tk-now.now-end .tk-dot{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 5px var(--mint)}
+.tk-now .now{margin-top:0;box-shadow:var(--shadow-lg)}
+.tk-body{display:flex;flex-direction:column;gap:2px;padding:var(--s2) var(--s3);border-radius:var(--r-md);background:var(--soft)}
+.tk-label{font-size:var(--text-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tk-text{display:flex;align-items:center;gap:var(--s2);font-size:var(--text-sm)}
+.tk-prev .tk-body{opacity:.7}
+.tk-prev .tk-text{color:var(--muted)}
+.tk-next .tk-body{background:var(--surface);border:1.5px dashed var(--line)}
+
+@keyframes tk-rise{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes tk-drop{from{opacity:0;transform:translateY(-28px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes tk-settle-up{from{opacity:1;transform:translateY(60px)}to{opacity:1;transform:none}}
+@keyframes tk-settle-down{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+@keyframes tk-pop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.livetrack[data-dir="fwd"] .tk-now{animation:tk-rise .45s var(--ease) both}
+.livetrack[data-dir="fwd"] .tk-next{animation:tk-rise .45s var(--ease) .12s both}
+.livetrack[data-dir="fwd"] .tk-prev{animation:tk-settle-up .4s var(--ease) both}
+.livetrack[data-dir="fwd"] .tk-prev .tk-dot{animation:tk-pop .4s var(--ease) .2s both}
+.livetrack[data-dir="back"] .tk-now{animation:tk-drop .4s var(--ease) both}
+.livetrack[data-dir="back"] .tk-prev{animation:tk-settle-down .35s var(--ease) both}
+.livetrack[data-dir="back"] .tk-next{animation:tk-drop .4s var(--ease) .08s both}
+.tk-now .tk-dot{animation:none}
+@media (prefers-reduced-motion: reduce){
+  .livetrack .tk,.livetrack .tk-dot,.progress span{animation:none!important;transition:none!important}
+}
+.compare-day{display:block;margin:var(--s2) auto 0}
+
+/* Live journey card: all steps of a trip in one card; the current one highlighted, finished ones ticked. */
+.alert-toggles{display:inline-flex;gap:var(--s2);margin-left:var(--s2);vertical-align:middle}
+.alert-toggles .chip{min-height:32px;padding:0 var(--s3);font-size:var(--text-sm)}
+.action{display:flex;flex-direction:column;gap:2px;margin:var(--s4) 0 0;padding:var(--s3) var(--s4);border-radius:var(--r-lg);background:var(--lilac);color:var(--ink)}
+.action span{font-size:var(--text-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.action b{font-size:var(--text-lg);font-weight:700;line-height:1.3}
+.action small{font-size:var(--text-sm);color:var(--muted)}
+.action.soon{background:var(--butter);animation:pulse 1.2s var(--ease) 3}
+.action.arrived-msg{background:var(--mint)}
+.now.arrived{border-color:var(--ok)}
+@keyframes pulse{0%,100%{transform:none}50%{transform:scale(1.02)}}
+.parts-list{list-style:none;margin:var(--s4) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--s2)}
+.parts-list li{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s2) var(--s3);border-radius:var(--r-md);transition:background var(--dur) var(--ease),opacity var(--dur) var(--ease)}
+.parts-list .pdot{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--muted);font-weight:700;font-size:13px}
+.parts-list .pdot svg.i{width:16px;height:16px}
+.parts-list .ptext{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.4}
+.parts-list .ptext small{font-size:var(--text-xs);color:var(--muted)}
+.parts-list .t{flex:none;font-size:var(--text-xs);color:var(--muted);font-variant-numeric:tabular-nums}
+.parts-list li.done{opacity:.55}
+.parts-list li.done .pdot{background:var(--mint);color:var(--ok)}
+.parts-list li.active{background:var(--soft);font-weight:600}
+.parts-list li.active .pdot{background:var(--accent);color:var(--accent-ink)}
+@media (prefers-reduced-motion: reduce){.action.soon{animation:none}}

@@ -96,10 +96,12 @@ export type Plan = {
 export type Event =
   | { type: "rampBlocked"; placeId: string }
   | { type: "elevatorOut"; stopName: string }
-  | { type: "late"; minutes: number }
+  /** Running late, or (live day) "re-plan from where I am": `done` = stops already visited, `from` = current location. */
+  | { type: "late"; minutes: number; done?: string[]; from?: LatLng }
   | { type: "addStop"; category: string }
   | { type: "setStay"; placeId: string; minutes: number } // the + / − buttons
-  | { type: "setTime"; placeId: string; at: string | null }; // "Start at" on a stop ("HH:MM", null = any time)
+  | { type: "setTime"; placeId: string; at: string | null } // "Start at" on a stop ("HH:MM", null = any time)
+  | { type: "setDay"; start?: string; end?: string }; // a trip day's leave / back-by times, "HH:MM"
 
 // ---- Vacation mode ----
 export type TripInput = {
@@ -110,8 +112,17 @@ export type TripInput = {
   needs: Needs;
   date: string; // first day, YYYY-MM-DD
   offset: string; // "-05:00"
+  dayStart?: string; // "HH:MM" leave each day (default 10:00)
+  dayEnd?: string; // "HH:MM" back by each day (default 20:00)
 };
-export type TripDay = { date: string; plan: Plan };
+export type TripDay = {
+  date: string;
+  plan: Plan;
+  /** When this day was last checked against live data (planned or re-checked), ISO. */
+  checkedAt?: string;
+  /** What the last re-check changed, in plain words. Empty = nothing changed. */
+  changes?: string[];
+};
 export type Trip = {
   id: string;
   title: string; // "3-day trip"

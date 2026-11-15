@@ -25,6 +25,8 @@ export function templateExplain(before: Plan, after: Plan, event: Event): string
     case "elevatorOut":
       return `The elevator at ${event.stopName} is out, so your route avoids it. ${home}`;
     case "late":
+      if (event.minutes === 0)
+        return `Re-planned the rest of your day from ${event.from ? "where you are" : "now"}. ${after.problems ? "Some stops no longer fit; check the list." : "Everything still fits."} ${home}`;
       return `Leaving ${event.minutes} min later. ${after.problems ? "Some stops no longer fit; check the list." : "Everything still fits."} ${home}`;
     case "addStop":
       return added.length ? `Added ${added.join(" and ")} to your day. ${home}` : `Couldn’t fit an accessible ${event.category} into your day.`;
@@ -34,6 +36,8 @@ export function templateExplain(before: Plan, after: Plan, event: Event): string
       const len = h ? `${h} hr${event.minutes % 60 ? ` ${event.minutes % 60} min` : ""}` : `${event.minutes} min`;
       return `You’ll stay ${len} at ${name}. ${after.problems ? "Some stops no longer fit; check the list." : "The rest of the day still fits."} ${home}`;
     }
+    case "setDay":
+      return `This day now runs ${event.start ? `from ${hm(`T${event.start}`)}` : ""}${event.start && event.end ? " " : ""}${event.end ? `until ${hm(`T${event.end}`)}` : ""}. ${after.problems ? "Some stops no longer fit; check the list." : "Everything still fits."} ${home}`;
     case "setTime": {
       const name = after.places[event.placeId]?.name ?? "that stop";
       return event.at
@@ -50,7 +54,8 @@ export const explainChange: ExplainChange = async (before, after, event) => {
       "explain",
       "You write one short, calm sentence (max 25 words) telling a wheelchair user how their day changed and why. " +
         "Use only the facts given. Never claim a place is accessible unless the facts say so.",
-      JSON.stringify({ event, before: names(before), after: names(after), homeBy: hm(after.endAt), problemsNow: after.problems, draft: fallback }),
+      // The user's coordinates never go to Gemini.
+      JSON.stringify({ event: "from" in event && event.from ? { ...event, from: "current location" } : event, before: names(before), after: names(after), homeBy: hm(after.endAt), problemsNow: after.problems, draft: fallback }),
       { type: "OBJECT", properties: { sentence: { type: "STRING" } }, required: ["sentence"] },
       6000,
     );

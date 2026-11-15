@@ -1,8 +1,8 @@
 # EazyRoam
 
-**A day planner for wheelchair users who travel by public transit.** Tell it where you want to go today, and it plans the whole day so that every place is accessible, every bus, train and sidewalk is step-free, and everything is open when you get there. When the day changes (a blocked ramp, an elevator out, running late), it re-plans on the spot.
+**A vacation planner for wheelchair users who travel by public transit.** Pick a city and the sights you want to see. EazyRoam plans every day so that each place is accessible, each bus, train and sidewalk is step-free, and everything is open when you get there. On the day, it guides you journey by journey and re-plans on the spot when something changes, so you can travel on your own.
 
-> Google Maps tells you whether one door is accessible. EazyRoam plans your whole day so that every door, every bus and every sidewalk is.
+> Google Maps tells you whether one door is accessible. EazyRoam plans your whole trip so that every door, every bus and every sidewalk is, and checks it again on the day.
 
 Built at **HackUMass 19**. Team plan, ownership and contracts: **[PLAN.md](PLAN.md)**.
 
@@ -10,17 +10,26 @@ Built at **HackUMass 19**. Team plan, ownership and contracts: **[PLAN.md](PLAN.
 
 ## What it does
 
-**Today**: type your plans in plain words ("lunch, a birthday gift, then the 5 pm movie").
-- Gemini turns the text into stops, with a realistic stay for each (a movie gets 150 min, a coffee 30), any set times, and whether the order matters.
-- For each stop it finds places near you (Google Places + OpenStreetMap) and checks entrance, restroom and seating access.
-- It plans the order around **opening hours**, your **leave** and **done-by** times, and where you **start** and **end**.
-- Every trip between stops is spelled out: **Roll › Bus 31 › Roll**, with the stop you board at, the stop you get off at, and a step-free / unknown / elevator-out chip for each.
-- **Never a false green check:** missing data reads "Accessibility unknown. Call ahead", with a backup place.
-- **On each stop:** **+ / −** to stay longer or shorter, and **Start at** for things with a set time (movies, appointments).
-- **Something changed?** Ramp blocked, elevator out, running 30 min late, or add a stop: the rest of the day re-plans.
-- **Compare**: the same request planned by "a normal map app" next to EazyRoam, with every problem listed.
+**1. Plan the trip**
+- Say which city you’re visiting and pick from its **top 15 sights**, each with its entrance access. Add your own places too.
+- Choose the **first day** (today up to a year ahead), the **trip length** (1 to 14 days), when you **leave** each day and when you want to be **back by**, and where you’re staying.
+- EazyRoam leaves out places that aren’t accessible (and says why), groups the rest into days by area, and plans each day around **opening hours** with a realistic stay at each place.
+- Every journey is spelled out: **Roll › Bus 31 › Roll**, with the stop you board at, the stop you get off at, and a step-free / unknown / elevator-out chip for each.
+- **Never a false green check:** missing data reads “Accessibility unknown. Call ahead”, with a backup place.
+- **Change any day:** **+ / −** on a stop to stay longer or shorter, **Start at** for set times, **Change times** for that day’s leave / back-by times. Save trips in the browser.
+- **Compare** a day with what a normal map app would plan for the same places, with every problem listed.
 
-**Vacation**: say which city you’re visiting and pick from its **top 15 sights** (with entrance access for each), add your own places, and choose a trip length (1 to 14 days). EazyRoam leaves out what isn't accessible, groups the rest into days by area, plans each day the same way, and lets you save trips and tick off "I've been here".
+**2. Checked again before you go**
+- A trip planned weeks ahead uses routes for a typical weekday and says so. Opening a saved trip re-checks **today’s and tomorrow’s** days against fresh data: opening hours for that date, elevator outages, reports and real routes. **Check again** works on any day.
+- Each re-check lists what changed in plain words (“Art Museum: Closes at 3:00 PM.”, “Getting to the Aquarium: bus 39 instead of Red Line.”) or says nothing changed.
+
+**3. On the day: Start today**
+- One card per journey, not per step: “Get to the Aquarium” lists every roll and ride, highlights the current one and ticks off finished ones, with GPS (or the timetable without GPS).
+- **Next thing to do** tells you when you need the phone again (“Board the bus B43 at Main St · about 11:02”). Alerts only when it’s time to act: board, **get off soon** (about 400 m before your stop), arrived. **Buzz** and **Read aloud** can be turned on or off.
+- Previous / now / next cards with smooth animations (off with “reduce motion”), a map with a “you are here” dot, and **“I’m at …”** once per place.
+- Running late, a blocked ramp, an elevator out, or a stop to add: **Re-plan from here** keeps the places you’ve visited and plans the rest from where you are now.
+
+Location stays between your phone and our server; it is never sent to Gemini. Phones only share location over HTTPS (or `localhost`).
 
 ---
 
@@ -35,7 +44,7 @@ npm install
 npm run dev:demo
 ```
 
-Open **http://localhost:3000**. Demo mode returns fixed sample plans (`fixtures/*.json`) whatever you type, so you can click through every screen without any API keys.
+Open **http://localhost:3000**. Demo mode returns fixed sample data (`fixtures/*.json`) whatever you pick, so you can click through every screen, including **Start this day**, without any API keys.
 
 ---
 
@@ -117,11 +126,11 @@ Env files are read only at start-up, so restart after editing `.env.local`. Only
 
 | Key | Used for | Without it |
 |---|---|---|
-| `GOOGLE_MAPS_API_KEY` | Places (New): places, hours, accessibility, addresses. Routes: transit | Planning returns an error naming the key |
-| `GEMINI_API_KEY` | Understanding the request; explaining changes | Keyword parser + template sentences |
+| `GOOGLE_MAPS_API_KEY` | Places (New): top sights, places, hours, accessibility, addresses. Routes: transit | Planning returns an error naming the key |
+| `GEMINI_API_KEY` | Explaining each re-plan in one sentence | Template sentences |
 | `TRANSITLAND_API_KEY` | `wheelchair_boarding` for every transit stop | Stops shown as "Access unknown" |
 | `ORS_API_KEY` | Wheelchair sidewalk routing (slope, kerbs) | Straight-line estimate marked "not checked" |
-| `MONGODB_URI` | Atlas cache + "ramp blocked" reports | In memory (lost on restart) |
+| `MONGODB_URI` | Atlas cache + "ramp blocked" / "elevator out" reports | In memory (lost on restart, not shared) |
 | `TIGER_DATABASE_URL` | Elevator-outage history → station reliability | No reliability scores |
 | `GEMINI_MODEL` | Model override | Default `gemini-3.1-flash-lite` |
 
@@ -131,11 +140,11 @@ Env files are read only at start-up, so restart after editing `.env.local`. Only
 
 ```
 Browser (React, MapLibre)
-  │  POST /api/plan · /api/replan · /api/compare · /api/trip · GET /api/geocode · /api/attractions
+  │  GET /api/attractions · POST /api/trip · /api/replan · /api/recheck · /api/compare · GET /api/geocode
   ▼
 Next.js API routes (server; all keys stay here)
-  ├─ Gemini ............ text → stops, stay minutes, set times, order (structured JSON)
-  ├─ Google Places (New) candidates, opening hours, accessibility, addresses
+  ├─ Gemini ............ one-sentence explanation of each re-plan
+  ├─ Google Places (New) top sights, opening hours, accessibility, addresses
   ├─ OpenStreetMap ..... wheelchair=* tags (cross-check)
   ├─ Google Routes ..... transit routes + alternatives
   ├─ Transitland ....... is each boarding/alighting stop step-free?
@@ -145,14 +154,18 @@ Next.js API routes (server; all keys stay here)
   └─ Tiger Data ........ outage history → reliability
 ```
 
-The planner (`lib/planner`) tries every choice of venue × order of stops on rough travel times, builds real step-free legs for the best few, checks opening hours, set times and your done-by time, and picks the best plan. Re-planning runs the same solver again from now, with the change applied.
+The planner (`lib/planner`) finds each picked place, leaves out what isn’t accessible, groups the rest into days by area, then for each day tries every order of stops on rough travel times, builds real step-free legs for the best few, checks opening hours, set times and the back-by time, and picks the best plan. Re-planning (`events.ts`) runs the same solver from now with the change applied; **re-checking** (`recheck.ts`) runs it again on fresh data and lists the differences.
+
+For trips more than two weeks out, transit is asked for the same weekday and time within the next two weeks (agencies publish schedules only a few weeks ahead); the day is checked again before you go.
+
+`/api/plan` (plan one day from typed text, with Gemini parsing it) is still in the back end and its code is tested, but the app no longer has a screen for it.
 
 **Server logs** print one line per step, so you can see what happened (never keys):
 ```
-[eazyroam:gemini] parse: ok with gemini-3.1-flash-lite in 805 ms
-[eazyroam:parse] via gemini: "lunch restaurant" 75 min, "movie theater" 150 min at 17:00 {"inOrder":true}
-[eazyroam:places] "lunch restaurant" → 6 found (accessible 3, partly 0, not 1, unknown 2)
-[eazyroam:plan] EazyRoam: 162 options → 3 stops, 0 problems, home 18:40
+[eazyroam:places] top sights in "Chicago" → 15 (accessible 11)
+[eazyroam:places] "Shedd Aquarium" → 1 found (accessible 1, partly 0, not 0, unknown 0)
+[eazyroam:plan] EazyRoam: 6 options → 3 stops, 0 problems, home 17:40
+[eazyroam:gemini] explain: ok with gemini-3.1-flash-lite in 640 ms
 ```
 Set `EAZYROAM_LOG=0` to turn them off.
 
@@ -161,9 +174,9 @@ Set `EAZYROAM_LOG=0` to turn them off.
 | Folder | What's there | Owner (PLAN.md) |
 |---|---|---|
 | `app/` | Pages and API routes | C |
-| `components/` | UI: ask form, day list, trip rows, map, change sheet, compare, vacation | C |
-| `lib/ai/` | Gemini client, request parser, change explanations | C |
-| `lib/planner/` | Solver, re-planning, Compare, Vacation trips | A |
+| `components/` | UI: trip setup, trip days, live day (`LiveDay.tsx`, `live.ts`), map, change sheet, compare | C |
+| `lib/ai/` | Gemini client, change explanations (and the request parser behind `/api/plan`) | C |
+| `lib/planner/` | Solver, re-planning, re-checking, Compare, trips | A |
 | `lib/routing/` | Google Routes, Transitland, OpenRouteService, leg builder | A |
 | `lib/data/` | Google Places, OpenStreetMap, MBTA outages | B |
 | `lib/db/` | MongoDB Atlas cache + reports, Tiger Data events | B |
@@ -177,14 +190,18 @@ Set `EAZYROAM_LOG=0` to turn them off.
 
 ## Deploy (Vultr + GoDaddy domain)
 
-1. Create a **Vultr Cloud Compute** VM with Docker (compose plugin included).
-2. In **GoDaddy Registry** DNS, point the domain's **A record** at the VM's IP.
-3. Create `.env.production` locally with your real keys (no `USE_FIXTURES`).
-4. Run:
-   ```bash
-   VULTR_HOST=root@<vm-ip> DOMAIN=<your-domain> ./deploy/deploy.sh
-   ```
-Caddy gets the HTTPS certificate automatically. After deploying, restrict the Google key to the VM's IP under *Application restrictions → IP addresses*.
+**You need**
+- A **Vultr Cloud Compute** VM: Ubuntu, **2 GB RAM or more** (building Next.js in Docker can run out of memory on 1 GB; add swap if so), Docker with the compose plugin (`curl -fsSL https://get.docker.com | sh`), ports **80 and 443** open, SSH key login.
+- A domain: in **GoDaddy Registry** DNS, point the **A record** (and `www`) at the VM’s IP **before** the first deploy, so Caddy can get the HTTPS certificate. HTTPS is required: phones only share location with HTTPS sites.
+- `.env.production` on your laptop (git-ignored; the script copies it to the server): `USE_FIXTURES=0`, `GOOGLE_MAPS_API_KEY`, `GEMINI_API_KEY`, and for the sponsor tracks `MONGODB_URI` and `TIGER_DATABASE_URL`. Optional: `ORS_API_KEY`, `TRANSITLAND_API_KEY`, `MBTA_API_KEY`.
+- Provider settings: restrict the Google key by the **VM’s IP address** (the server calls Google, so a website restriction fails), allow the VM’s IP in Atlas **Network Access**, and set Google Cloud quotas and a budget alert.
+
+**Deploy**
+```bash
+docker build .        # optional: check the image builds on your laptop first
+VULTR_HOST=root@<vm-ip> DOMAIN=<your-domain> ./deploy/deploy.sh
+```
+The script syncs the code, uploads `.env.production`, and runs `docker compose up -d --build` (the app plus Caddy for HTTPS). Then open `https://<your-domain>` on a phone and try **Start today**.
 
 ---
 
@@ -195,7 +212,10 @@ Caddy gets the HTTPS certificate automatically. After deploying, restrict the Go
 | Sample places ("Draft Lunch Café") with `npm run dev` | Remove `USE_FIXTURES=1` from `.env.local` and restart |
 | `places.googleapis.com 403: Permission denied` | Enable **Places API (New)** + **Routes API**, tick them under the key's API restrictions, check billing, wait 2–5 min |
 | `GOOGLE_MAPS_API_KEY is not set` | Add it to `.env.local` and restart |
-| "We couldn't tell where you want to go" | Name places ("lunch, a pharmacy…"); check the log for `gemini … FAILED` |
+| "We couldn’t find top sights" | Add the state, e.g. “Portland, OR” |
+| “Location off · following the timetable” on the live day | Allow location for the site; on a phone the site must be HTTPS |
+| No buzz on iPhone | iPhones don’t let websites vibrate; turn on **Read aloud** |
 | Map is blank | Restart `npm run dev` / rebuild (it copies `public/maplibre-gl-worker.mjs`), then hard-refresh |
 | "Another next dev server is already running" | Only one dev server per folder: stop the other one |
-| Times look wrong | An empty **Leave at** means *now*; a leave time that already passed today plans for tomorrow (the plan says so) |
+| “You’re N min behind the plan” right after Start | The day was planned for earlier than now; tap **Re-plan the rest of my day** |
+| Trip starts tomorrow, not today | A trip starting today after its leave time starts the next day |
