@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { problemList } from "@/components/CompareView";
-import { changedIds, legKey } from "@/components/DayList";
+import { DayList, changedIds, legKey } from "@/components/DayList";
+import { LegRow, legSteps, stopChip } from "@/components/LegRow";
 import { PlaceCard } from "@/components/PlaceCard";
 import { decodePolyline } from "@/components/polyline";
 import type { Plan } from "@/lib/types";
@@ -55,5 +56,49 @@ describe("PlaceCard", () => {
     expect(html).toContain("Accessibility not confirmed.");
     expect(html).toContain("Call (413) 555-0147 before you go.");
     expect(html).toContain("Backup: <b>Draft Backup Gift Shop</b>");
+  });
+});
+
+describe("LegRow", () => {
+  it("spells out roll → bus → roll with each stop's access, never a false step-free", () => {
+    const leg = {
+      ...mine.legs[0],
+      stops: [
+        { name: "Mission St & 3rd St", location: { lat: 0, lng: 0 }, wheelchair: "unknown" as const },
+        { name: "Toll Plaza", location: { lat: 0, lng: 0 }, wheelchair: "yes" as const },
+      ],
+      steps: [
+        { kind: "roll" as const, minutes: 4, to: "Mission St & 3rd St" },
+        { kind: "bus" as const, minutes: 38, line: "101", from: "Mission St & 3rd St", to: "Toll Plaza" },
+        { kind: "roll" as const, minutes: 3 },
+      ],
+    };
+    const html = renderToStaticMarkup(<LegRow leg={leg} toName="Draft Lunch Café" />);
+    expect(html).toContain("Roll 4 min to <b>Mission St &amp; 3rd St</b>");
+    expect(html).toContain("Take the bus 101 for 38 min. Board at <b>Mission St &amp; 3rd St</b>");
+    expect(html).toMatch(/Mission St &amp; 3rd St<\/b> <span class="achip none">Access unknown/);
+    expect(html).toMatch(/Toll Plaza<\/b> <span class="achip ok">Step-free/);
+    expect(html).toContain("Roll 3 min to <b>Draft Lunch Café</b>");
+  });
+
+  it("builds steps for legs without them, and chips for every stop state", () => {
+    expect(legSteps({ ...mine.legs[1], steps: undefined })).toEqual([{ kind: "roll", minutes: 10 }]);
+    expect(stopChip({ name: "x", location: { lat: 0, lng: 0 }, wheelchair: "yes", elevatorOut: true }).text).toBe("Elevator out");
+    expect(stopChip({ name: "x", location: { lat: 0, lng: 0 }, wheelchair: "no" }).tone).toBe("bad");
+    expect(stopChip(undefined).text).toBe("Access unknown");
+  });
+});
+
+describe("DayList start and end rows", () => {
+  it("shows Start and Home with the start address on a round trip", () => {
+    const html = renderToStaticMarkup(<DayList plan={mine} startLabel="Start" endLabel="Home" />);
+    expect(html).toContain("Start<small>UMass Amherst, Amherst, MA (sample)</small>");
+    expect(html).toContain("Home<small>UMass Amherst, Amherst, MA (sample)</small>");
+  });
+  it("shows End with the end address when the day ends elsewhere", () => {
+    const plan = { ...mine, request: { ...mine.request, endLabel: "Amherst Town Hall" } };
+    const html = renderToStaticMarkup(<DayList plan={plan} startLabel="Start" endLabel="Home" />);
+    expect(html).toContain("End<small>Amherst Town Hall</small>");
+    expect(html).toContain("Roll 4 min to <b>Amherst Town Hall</b>");
   });
 });

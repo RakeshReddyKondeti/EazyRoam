@@ -10,6 +10,7 @@ type Props = { label: string; placeholder: string; value: Start; onChange: (s: S
 
 export function StartField({ label, placeholder, value, onChange }: Props) {
   const [msg, setMsg] = useState("");
+  const id = `loc-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   function locate() {
     if (!navigator.geolocation) return setMsg("Location isn’t available here. Type an address instead.");
@@ -26,11 +27,11 @@ export function StartField({ label, placeholder, value, onChange }: Props) {
 
   return (
     <div>
-      <p className="label" id={`${label}-l`}>{label}</p>
+      <p className="label" id={id}>{label}</p>
       <div className="addrow">
         <input
           className="input"
-          aria-labelledby={`${label}-l`}
+          aria-labelledby={id}
           placeholder={value.origin ? "Current location" : placeholder}
           value={value.address ?? ""}
           onChange={(e) => {

@@ -1,4 +1,5 @@
-import type { Plan } from "@/lib/types";
+import { wantFor } from "@/lib/planner/wants";
+import type { Event, Plan } from "@/lib/types";
 import { fmtTime } from "./format";
 import { LegRow } from "./LegRow";
 import { StopRow } from "./StopRow";
@@ -6,9 +7,13 @@ import { StopRow } from "./StopRow";
 type Props = {
   plan: Plan;
   newIds?: Set<string>;
+  startLabel?: string; // "Start" (Today) or "Leave" (Vacation)
   endLabel?: string; // "Home" (Today) or "Back to where you’re staying" (Vacation)
   visited?: Set<string>;
   onVisited?: (placeId: string, v: boolean) => void;
+  /** Today: + / − stay and start time on each stop. */
+  onAdjust?: (events: Event[]) => void;
+  busy?: boolean;
 };
 
 /** Keys DayList uses for highlighting changed rows: stop = placeId, leg = "leg:<from>><to>". */
@@ -25,15 +30,26 @@ export function changedIds(prev: Plan | null, next: Plan): Set<string> {
   return out;
 }
 
-/** The day as a timeline (.list): leg, stop, leg, stop … then home. */
-export function DayList({ plan, newIds, endLabel = "Home", visited, onVisited }: Props) {
+/** The day as a timeline (.list): Start, leg, stop, leg, stop … then home. */
+export function DayList({ plan, newIds, startLabel, endLabel, visited, onVisited, onAdjust, busy }: Props) {
   const rows: React.ReactNode[] = [];
   let prev = "home";
   const legFor = (from: string, to: string) => plan.legs.find((l) => l.fromId === from && l.toId === to);
+  const where = plan.request.startLabel ?? "Your starting point";
 
+  rows.push(
+    <li key="start" className="home endpoint">
+      <span className="t">{fmtTime(plan.legs[0]?.departAt ?? plan.request.start)}</span>
+      <span>
+        {startLabel ?? "Start"}
+        <small>{where}</small>
+      </span>
+    </li>,
+  );
   for (const s of plan.stops) {
     const l = legFor(prev, s.placeId);
-    if (l) rows.push(<LegRow key={legKey(prev, s.placeId)} leg={l} isNew={newIds?.has(legKey(prev, s.placeId))} />);
+    const name = plan.places[s.placeId]?.name ?? s.placeId;
+    if (l) rows.push(<LegRow key={legKey(prev, s.placeId)} leg={l} toName={name} isNew={newIds?.has(legKey(prev, s.placeId))} />);
     rows.push(
       <StopRow
         key={s.placeId}
@@ -43,16 +59,27 @@ export function DayList({ plan, newIds, endLabel = "Home", visited, onVisited }:
         isNew={newIds?.has(s.placeId)}
         visited={visited?.has(s.placeId)}
         onVisited={onVisited ? (v) => onVisited(s.placeId, v) : undefined}
+        want={plan.request.wants[wantFor(plan, plan.request.wants, s.placeId)]}
+        onAdjust={onAdjust}
+        busy={busy}
       />,
     );
     prev = s.placeId;
   }
   const back = legFor(prev, "home");
-  if (back) rows.push(<LegRow key={legKey(prev, "home")} leg={back} isNew={newIds?.has(legKey(prev, "home"))} />);
+  // A different end location reads "End · <address>"; a round trip reads "Home · <start address>".
+  const endsElsewhere = Boolean(plan.request.endLabel);
+  const homeName = endsElsewhere ? "End" : (endLabel ?? "Home");
+  const endWhere = plan.request.endLabel ?? where;
+  if (back)
+    rows.push(<LegRow key={legKey(prev, "home")} leg={back} toName={endsElsewhere ? endWhere : homeName.toLowerCase()} isNew={newIds?.has(legKey(prev, "home"))} />);
   rows.push(
-    <li key="end" className="home">
+    <li key="end" className="home endpoint">
       <span className="t">{fmtTime(plan.endAt)}</span>
-      <span>{endLabel}</span>
+      <span>
+        {homeName}
+        <small>{endWhere}</small>
+      </span>
     </li>,
   );
 

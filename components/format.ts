@@ -4,6 +4,13 @@ import type { Access, PlanStop } from "@/lib/types";
 export const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
+/** "75 min" or "2 hr" or "1 hr 30 min" between two ISO times. */
+export function stayLabel(a: string, b: string): string {
+  const m = Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 60000));
+  const h = Math.floor(m / 60);
+  return h ? `${h} hr${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`;
+}
+
 export type Tone = "ok" | "warn" | "bad" | "none";
 
 export const accessTone = (a: Access): Tone =>

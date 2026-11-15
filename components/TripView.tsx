@@ -70,6 +70,7 @@ export function TripView({ trip, saved, visited, onVisited, onSave, onBack }: Pr
               {d.plan.explanation && <div className="note-line">{d.plan.explanation}</div>}
               <DayList
                 plan={d.plan}
+                startLabel="Leave"
                 endLabel="Back to where you’re staying"
                 visited={new Set(d.plan.stops.map((s) => s.placeId).filter((id) => visited.has(`${d.date}:${id}`)))}
                 onVisited={(id, v) => onVisited(`${d.date}:${id}`, v)}

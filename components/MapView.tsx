@@ -10,8 +10,10 @@ import { decodePolyline } from "./polyline";
 
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
-function endpoint(plan: Plan, id: string): LatLng {
-  return id === "home" ? plan.request.origin : (plan.places[id]?.location ?? plan.request.origin);
+/** Where a leg starts or ends. "home" is the start for a first leg and the end location for a last leg. */
+function endpoint(plan: Plan, id: string, side: "from" | "to"): LatLng {
+  if (id === "home") return side === "from" ? plan.request.origin : plan.request.home;
+  return plan.places[id]?.location ?? plan.request.origin;
 }
 
 function pin(className: string, text: string, label: string, onClick?: () => void) {
@@ -78,7 +80,7 @@ export function MapView({ plan }: { plan: Plan }) {
       const features = plan.legs.map((l) => {
         const coords = l.polyline
           ? decodePolyline(l.polyline)
-          : [endpoint(plan, l.fromId), endpoint(plan, l.toId)].map((p) => [p.lng, p.lat] as [number, number]);
+          : [endpoint(plan, l.fromId, "from"), endpoint(plan, l.toId, "to")].map((p) => [p.lng, p.lat] as [number, number]);
         return { type: "Feature" as const, properties: { dashed: !l.polyline }, geometry: { type: "LineString" as const, coordinates: coords } };
       });
       const data = { type: "FeatureCollection" as const, features };
@@ -93,7 +95,10 @@ export function MapView({ plan }: { plan: Plan }) {
       markers.current.forEach((mk) => mk.remove());
       markers.current = [];
       const add = (el: HTMLElement, p: LatLng) => markers.current.push(new ml.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(m));
-      add(pin("pin pin-home", "H", "Start and home"), plan.request.origin);
+      const { origin, home } = plan.request;
+      const roundTrip = Math.abs(origin.lat - home.lat) < 1e-5 && Math.abs(origin.lng - home.lng) < 1e-5;
+      add(pin("pin pin-home", roundTrip ? "H" : "S", roundTrip ? "Start and home" : "Start"), origin);
+      if (!roundTrip) add(pin("pin pin-home", "E", "End"), home);
       plan.stops.forEach((s, i) => {
         const p = plan.places[s.placeId];
         if (p) add(pin(`pin pin-num s-${s.status}`, String(i + 1), `Stop ${i + 1}: ${p.name}`, () => setSelected(s.placeId)), p.location);

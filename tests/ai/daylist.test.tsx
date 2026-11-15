@@ -17,7 +17,7 @@ describe("DayList", () => {
   });
 
   it("renders one leg row per leg and ends at Home", () => {
-    expect(html.match(/class="leg/g)?.length).toBe(plan.legs.length);
+    expect(html.match(/class="leg leg-rich/g)?.length).toBe(plan.legs.length);
     expect(html).toContain(">Home<");
   });
 

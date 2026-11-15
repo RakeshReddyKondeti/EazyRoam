@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { Event, Needs, Plan, Trip } from "@/lib/types";
-import { AskForm, type Start } from "@/components/AskForm";
+import { AskForm, type DayOptions } from "@/components/AskForm";
 import { ChangeSheet } from "@/components/ChangeSheet";
 import { CompareView } from "@/components/CompareView";
 import { DayList, changedIds } from "@/components/DayList";
@@ -64,8 +64,8 @@ export default function Home() {
     setBusy("trip");
     setError("");
     try {
-      const { date, offset } = localDateAndOffset();
-      const t = await post<Trip>("/api/trip", { places: r.places, days: r.days, needs: r.needs, origin: r.start.origin, startAddress: r.start.address, date, offset });
+      const { date, offset, now } = localDateAndOffset();
+      const t = await post<Trip>("/api/trip", { places: r.places, days: r.days, needs: r.needs, origin: r.start.origin, startAddress: r.start.address, date, offset, now });
       setTrip(t);
       setTripSaved(false);
       setVisited(new Set());
@@ -96,12 +96,24 @@ export default function Home() {
     }
   }
 
-  async function planDay(text: string, needs: Needs, start: Start) {
+  async function planDay(text: string, needs: Needs, o: DayOptions) {
     setBusy("plan");
     setError("");
     try {
-      const { date, offset } = localDateAndOffset();
-      const p = await post<Plan>("/api/plan", { text, needs, origin: start.origin, startAddress: start.address, date, offset });
+      const { date, offset, now } = localDateAndOffset();
+      const p = await post<Plan>("/api/plan", {
+        text,
+        needs,
+        origin: o.start.origin,
+        startAddress: o.start.address,
+        home: o.end?.origin,
+        endAddress: o.end?.address,
+        leaveAt: o.leaveAt,
+        doneBy: o.doneBy,
+        date,
+        offset,
+        now,
+      });
       setPlan(p);
       setNormal(null);
       setNewIds(new Set());
@@ -115,12 +127,14 @@ export default function Home() {
     }
   }
 
-  async function change(event: Event) {
+  /** One or more changes (e.g. a new start time and a longer stay), applied in order. */
+  async function change(event: Event | Event[]) {
     if (!plan) return;
     setBusy("replan");
     setError("");
     try {
-      const next = await post<Plan>("/api/replan", { plan, event, now: localDateAndOffset().now });
+      let next = plan;
+      for (const e of Array.isArray(event) ? event : [event]) next = await post<Plan>("/api/replan", { plan: next, event: e, now: localDateAndOffset().now });
       setNewIds(changedIds(plan, next));
       setPlan(next);
       setNormal(null);
@@ -200,7 +214,10 @@ export default function Home() {
             </button>
           </div>
           <div aria-live="polite">{plan.explanation && <div className="note-line">{plan.explanation}</div>}</div>
-          {view === "list" ? <DayList plan={plan} newIds={newIds} /> : <MapView plan={plan} />}
+          {plan.stops.length === 0 && !plan.explanation && (
+            <div className="note-line">We couldn’t plan any stops for this request. Try naming different places.</div>
+          )}
+          {view === "list" ? <DayList plan={plan} newIds={newIds} startLabel="Start" endLabel="Home" onAdjust={change} busy={busy === "replan"} /> : <MapView plan={plan} />}
           <ChangeSheet plan={plan} busy={busy === "replan"} onEvent={change} />
         </main>
       )}
