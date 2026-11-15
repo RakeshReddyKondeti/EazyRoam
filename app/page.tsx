@@ -1,49 +1,108 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import type { Needs, Plan } from "@/lib/types";
-import { AskForm } from "@/components/AskForm";
-import { DayList } from "@/components/DayList";
+import type { Event, Needs, Plan } from "@/lib/types";
+import { AskForm, type Start } from "@/components/AskForm";
+import { ChangeSheet } from "@/components/ChangeSheet";
+import { CompareView } from "@/components/CompareView";
+import { DayList, changedIds } from "@/components/DayList";
 import { fmtTime } from "@/components/format";
 import { Icon, IconSprite } from "@/components/Icons";
 
-type Screen = "ask" | "day";
+// MapLibre touches window: load it only in the browser.
+const MapView = dynamic(() => import("@/components/MapView").then((m) => m.MapView), {
+  ssr: false,
+  loading: () => <p className="hint" style={{ marginTop: 24 }}>Loading map…</p>,
+});
+
+type Screen = "ask" | "day" | "compare";
 type View = "list" | "map";
+
+/** The user's local date and UTC offset, e.g. "2026-11-14", "-05:00". */
+function localDateAndOffset() {
+  const d = new Date();
+  const off = -d.getTimezoneOffset();
+  const sign = off < 0 ? "-" : "+";
+  const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return { date, offset: `${sign}${pad(off / 60)}:${pad(off % 60)}`, now: `${date}T${pad(d.getHours())}:${pad(d.getMinutes())}:00${sign}${pad(off / 60)}:${pad(off % 60)}` };
+}
+
+async function post<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+  return data as T;
+}
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("ask");
   const [view, setView] = useState<View>("list");
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [normal, setNormal] = useState<Plan | null>(null);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"" | "plan" | "replan" | "compare">("");
 
-  async function planDay(text: string, needs: Needs) {
-    setBusy(true);
+  const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
+
+  async function planDay(text: string, needs: Needs, start: Start) {
+    setBusy("plan");
     setError("");
     try {
-      // TODO(C): send origin/home from browser geolocation once /api/plan is wired to parseRequest.
-      const res = await fetch("/api/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, needs }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      setPlan(data as Plan);
+      const { date, offset } = localDateAndOffset();
+      const p = await post<Plan>("/api/plan", { text, needs, origin: start.origin, startAddress: start.address, date, offset });
+      setPlan(p);
+      setNormal(null);
+      setNewIds(new Set());
       setView("list");
       setScreen("day");
       window.scrollTo({ top: 0 });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      fail(e);
     } finally {
-      setBusy(false);
+      setBusy("");
+    }
+  }
+
+  async function change(event: Event) {
+    if (!plan) return;
+    setBusy("replan");
+    setError("");
+    try {
+      const next = await post<Plan>("/api/replan", { plan, event, now: localDateAndOffset().now });
+      setNewIds(changedIds(plan, next));
+      setPlan(next);
+      setNormal(null);
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function compare() {
+    if (!plan) return;
+    setScreen("compare");
+    window.scrollTo({ top: 0 });
+    if (normal) return;
+    setBusy("compare");
+    setError("");
+    try {
+      setNormal(await post<Plan>("/api/compare", { request: plan.request }));
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy("");
     }
   }
 
   const unknowns = plan?.stops.filter((s) => s.status === "unknown").length ?? 0;
+  const bad = plan?.stops.filter((s) => s.status === "bad").length ?? 0;
 
   return (
-    <div className="app">
+    <div className={`app${screen === "compare" ? " wide" : ""}`}>
       <IconSprite />
       <div className="topbar">
         <div className="brand">
@@ -52,12 +111,9 @@ export default function Home() {
         </div>
       </div>
 
-      {screen === "ask" && (
-        <>
-          <AskForm busy={busy} onSubmit={planDay} />
-          <div aria-live="polite">{error && <p className="note-line">{error}</p>}</div>
-        </>
-      )}
+      <div aria-live="assertive">{error && <p className="note-line error-line">{error}</p>}</div>
+
+      {screen === "ask" && <AskForm busy={busy === "plan"} onSubmit={planDay} />}
 
       {screen === "day" && plan && (
         <main id="day">
@@ -67,8 +123,9 @@ export default function Home() {
           </button>
           <h1>Your day</h1>
           <p className="sub">
-            {plan.stops.length} stops · {unknowns ? `${unknowns} to call ahead` : "step-free all the way"} · home
-            by {fmtTime(plan.endAt)}
+            {plan.stops.length} stop{plan.stops.length === 1 ? "" : "s"} ·{" "}
+            {bad ? `${bad} problem${bad > 1 ? "s" : ""}` : unknowns ? `${unknowns} to call ahead` : "step-free all the way"} · home by{" "}
+            {fmtTime(plan.endAt)}
           </p>
           <div className="bar">
             <div className="seg" role="tablist" aria-label="View">
@@ -79,19 +136,25 @@ export default function Home() {
                 Map
               </button>
             </div>
+            <button className="link" onClick={compare}>
+              Compare
+            </button>
           </div>
-          {plan.explanation && (
-            <div className="note-line" aria-live="polite">
-              {plan.explanation}
-            </div>
-          )}
-          {view === "list" ? (
-            <DayList plan={plan} />
-          ) : (
-            <p className="hint" style={{ marginTop: 24 }}>
-              Map view is coming next (MapView).
-            </p>
-          )}
+          <div aria-live="polite">{plan.explanation && <div className="note-line">{plan.explanation}</div>}</div>
+          {view === "list" ? <DayList plan={plan} newIds={newIds} /> : <MapView plan={plan} />}
+          <ChangeSheet plan={plan} busy={busy === "replan"} onEvent={change} />
+        </main>
+      )}
+
+      {screen === "compare" && plan && (
+        <main id="compare">
+          <button className="back" onClick={() => setScreen("day")}>
+            <Icon name="back" />
+            Back to my day
+          </button>
+          <h1>Same request, two plans</h1>
+          <p className="sub">What a normal map app suggests, checked the way EazyRoam checks everything.</p>
+          {normal ? <CompareView normal={normal} mine={plan} /> : <p className="hint" style={{ marginTop: 24 }}>{busy === "compare" ? "Building the normal plan…" : ""}</p>}
         </main>
       )}
     </div>

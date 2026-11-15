@@ -216,3 +216,42 @@ textarea:focus,.input:focus{outline:none;border-color:var(--accent)}
 @keyframes fade{from{opacity:.2;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes sheet-in{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important} }
+
+/* ---------- 11. EazyRoam app additions (map, place card, compare, start, errors) ---------- */
+.app.wide{max-width:1080px}
+.start-msg{margin-top:var(--s2);font-size:var(--text-sm)}
+.error-line{background:var(--peach);color:var(--bad);margin-bottom:var(--s4)}
+.fab:disabled{opacity:.85;cursor:progress}
+
+/* Map */
+.map-canvas{width:100%;height:min(60vh,460px)}
+.map-fallback{padding:var(--s8) var(--s4)}
+.pin{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:var(--shadow-sm);font-family:var(--font-display);font-weight:600;font-size:.9rem;line-height:1;cursor:default}
+button.pin{cursor:pointer;padding:0}
+.pin-home{background:var(--ink);color:var(--bg)}
+.pin-num{background:var(--accent);color:var(--accent-ink)}
+.pin-num.s-unknown{background:var(--warn);color:var(--surface)}
+.pin-num.s-bad{background:var(--bad);color:var(--surface)}
+.pin-out{width:24px;height:24px;border-radius:6px;background:var(--bad);color:var(--surface)}
+.pin-num-inline{background:var(--lilac);font-family:var(--font-display);font-weight:600}
+.maplibregl-ctrl-attrib{font-size:11px}
+
+/* Place card */
+.place-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
+.access-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2) var(--s4);font-size:var(--text-sm)}
+.access-rows div{display:flex;justify-content:space-between;gap:var(--s2);padding:var(--s2) var(--s3);border-radius:var(--r-md);background:var(--soft)}
+
+/* Compare */
+.compare{margin-top:var(--s5)}
+.compare-grid{display:grid;grid-template-columns:1fr;gap:var(--s6)}
+.compare-grid[data-show="normal"] .compare-col:last-child,.compare-grid[data-show="mine"] .compare-col:first-child{display:none}
+.compare-col{padding:var(--s4);border:1px solid var(--line);border-radius:var(--r-xl);background:var(--surface);min-width:0}
+.compare-col h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:var(--text-xl)}
+.compare-col .list{margin-top:var(--s3)}
+.problems{margin:var(--s3) 0 0;padding:var(--s3) var(--s4) var(--s3) var(--s7);border-radius:var(--r-lg);background:var(--peach);color:var(--ink);font-size:var(--text-sm)}
+.problems li+li{margin-top:var(--s1)}
+@media (min-width:900px){
+  .compare-toggle{display:none}
+  .compare-grid{grid-template-columns:1fr 1fr}
+  .compare-grid .compare-col{display:block!important}
+}

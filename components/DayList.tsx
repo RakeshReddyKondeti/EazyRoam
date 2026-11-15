@@ -5,14 +5,29 @@ import { StopRow } from "./StopRow";
 
 type Props = { plan: Plan; newIds?: Set<string> };
 
-/** The day as a timeline (.list): leg, stop, leg, stop … then home. Legs are matched by fromId. */
-export function DayList({ plan, newIds }: Props) {
-  const legFrom = (id: string) => plan.legs.find((l) => l.fromId === id);
-  const firstLeg = legFrom("home") ?? plan.legs[0];
-  const rows: React.ReactNode[] = [];
+/** Keys DayList uses for highlighting changed rows: stop = placeId, leg = "leg:<from>><to>". */
+export const legKey = (fromId: string, toId: string) => `leg:${fromId}>${toId}`;
 
-  if (firstLeg) rows.push(<LegRow key="leg-home" leg={firstLeg} isNew={newIds?.has(`leg-home`)} />);
+/** What's new in `next` compared with `prev` (for the .new highlight after a re-plan). */
+export function changedIds(prev: Plan | null, next: Plan): Set<string> {
+  const out = new Set<string>();
+  if (!prev) return out;
+  const prevStops = new Set(prev.stops.map((s) => s.placeId));
+  const prevLegs = new Set(prev.legs.map((l) => `${legKey(l.fromId, l.toId)}|${l.mode}|${l.minutes}`));
+  for (const s of next.stops) if (!prevStops.has(s.placeId)) out.add(s.placeId);
+  for (const l of next.legs) if (!prevLegs.has(`${legKey(l.fromId, l.toId)}|${l.mode}|${l.minutes}`)) out.add(legKey(l.fromId, l.toId));
+  return out;
+}
+
+/** The day as a timeline (.list): leg, stop, leg, stop … then home. */
+export function DayList({ plan, newIds }: Props) {
+  const rows: React.ReactNode[] = [];
+  let prev = "home";
+  const legFor = (from: string, to: string) => plan.legs.find((l) => l.fromId === from && l.toId === to);
+
   for (const s of plan.stops) {
+    const l = legFor(prev, s.placeId);
+    if (l) rows.push(<LegRow key={legKey(prev, s.placeId)} leg={l} isNew={newIds?.has(legKey(prev, s.placeId))} />);
     rows.push(
       <StopRow
         key={s.placeId}
@@ -22,9 +37,10 @@ export function DayList({ plan, newIds }: Props) {
         isNew={newIds?.has(s.placeId)}
       />,
     );
-    const next = legFrom(s.placeId);
-    if (next) rows.push(<LegRow key={`leg-${s.placeId}`} leg={next} isNew={newIds?.has(`leg-${s.placeId}`)} />);
+    prev = s.placeId;
   }
+  const back = legFor(prev, "home");
+  if (back) rows.push(<LegRow key={legKey(prev, "home")} leg={back} isNew={newIds?.has(legKey(prev, "home"))} />);
   rows.push(
     <li key="end" className="home">
       <span className="t">{fmtTime(plan.endAt)}</span>

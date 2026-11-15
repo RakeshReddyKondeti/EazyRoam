@@ -1,9 +1,11 @@
 // GET /api/geocode?q=address -> { lat, lng, label }. geocode (B).
+import { connection } from "next/server";
 import { geocode } from "@/lib/data/places";
 import { BadRequest, errorResponse } from "../_lib/errors";
 import { fixturesOn } from "../_lib/fixtures";
 
 export async function GET(req: Request) {
+  await connection(); // per-request only: never prerender (Cache Components)
   try {
     const q = new URL(req.url).searchParams.get("q")?.trim();
     if (!q) throw new BadRequest("Add ?q=<address>.");
