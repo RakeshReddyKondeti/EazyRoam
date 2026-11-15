@@ -3,6 +3,8 @@ import { geocode } from "@/lib/data/places";
 import { realDeps } from "@/lib/deps";
 import { planTrip } from "@/lib/planner";
 import { addDays } from "@/lib/planner/geo";
+
+const MAX_TRIP_DAYS = 14;
 import type { LatLng, Needs } from "@/lib/types";
 import { BadRequest, errorResponse, readJson } from "../_lib/errors";
 import { fixtureResponse, fixturesOn } from "../_lib/fixtures";
@@ -15,7 +17,7 @@ export async function POST(req: Request) {
     const b = await readJson<Body>(req);
     const places = (b.places ?? []).map((p) => p.trim()).filter(Boolean).slice(0, 20);
     if (!places.length) throw new BadRequest("Add at least one place to visit.");
-    if (![1, 3, 7].includes(b.days ?? 0)) throw new BadRequest("Trip length must be 1, 3 or 7 days.");
+    if (!Number.isInteger(b.days) || b.days! < 1 || b.days! > MAX_TRIP_DAYS) throw new BadRequest(`Trip length must be 1 to ${MAX_TRIP_DAYS} days.`);
     if (!b.date || !/^\d{4}-\d{2}-\d{2}$/.test(b.date) || !b.offset || !/^[+-]\d{2}:\d{2}$/.test(b.offset))
       throw new BadRequest("Missing date/offset.");
     let origin = b.origin;

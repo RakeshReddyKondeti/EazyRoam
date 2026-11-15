@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Place } from "@/lib/types";
-import { addDays, clusterDays, planTrip } from "@/lib/planner/trip";
+import { addDays, clusterDays, planTrip, stopsPerDay, tripTitle } from "@/lib/planner/trip";
 import { PLACES, fakeDeps } from "./fakes";
 
 const byName: Record<string, Place> = {
@@ -48,5 +48,23 @@ describe("clusterDays", () => {
   });
   it("addDays crosses month ends", () => {
     expect(addDays("2026-11-30", 1)).toBe("2026-12-01");
+  });
+});
+
+describe("flexible trip length", () => {
+  it("titles any length", () => {
+    expect(tripTitle(1)).toBe("1-day trip");
+    expect(tripTitle(5)).toBe("5-day trip");
+    expect(tripTitle(7)).toBe("1-week trip");
+    expect(tripTitle(14)).toBe("2-week trip");
+  });
+  it("spreads stops thinner on longer trips", () => {
+    expect([1, 3, 4, 6, 7, 14].map(stopsPerDay)).toEqual([4, 4, 3, 3, 2, 2]);
+  });
+  it("plans a 5-day trip", async () => {
+    const trip = await planTrip({ ...input, days: 5 }, deps);
+    expect(trip.title).toBe("5-day trip");
+    expect(trip.dayPlans.length + trip.freeDays).toBe(5);
+    expect(trip.dayPlans.every((d) => d.plan.stops.length <= 3)).toBe(true);
   });
 });

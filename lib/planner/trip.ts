@@ -60,6 +60,12 @@ export function clusterDays<T extends { location: LatLng }>(places: T[], k: numb
   return groups.filter((g) => g.length);
 }
 
+/** Longer trips spread out: up to 4 stops a day for short trips, 3 for 4–6 days, 2 for a week or more. */
+export const stopsPerDay = (days: number) => (days >= 7 ? 2 : days >= 4 ? 3 : 4);
+
+/** "1-day trip", "5-day trip", "1-week trip", "2-week trip". */
+export const tripTitle = (days: number) => (days % 7 === 0 ? `${days / 7}-week trip` : `${days}-day trip`);
+
 export const planTrip: PlanTrip = async (input, deps) => {
   const { places: names, days, origin, needs, date, offset, startLabel } = input;
 
@@ -77,7 +83,7 @@ export const planTrip: PlanTrip = async (input, deps) => {
   const usable = all.filter((x) => x.place.overall !== "no");
 
   // 3. Days: fewer stops per day on a longer trip.
-  const cap = days >= 7 ? 2 : 4;
+  const cap = stopsPerDay(days);
   const k = Math.min(days, Math.max(1, Math.ceil(usable.length / cap)));
   const groups = clusterDays(usable.map((x) => ({ ...x, location: x.place.location })), k, days === 1 ? usable.length : cap);
 
@@ -111,7 +117,7 @@ export const planTrip: PlanTrip = async (input, deps) => {
     }),
   );
 
-  const title = days === 1 ? "1-day trip" : days === 7 ? "1-week trip" : `${days}-day trip`;
+  const title = tripTitle(days);
   const trip: Trip = { id: crypto.randomUUID(), title, input, dayPlans, leftOut, notFound, freeDays: Math.max(0, days - dayPlans.length) };
   return trip;
 };

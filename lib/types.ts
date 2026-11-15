@@ -104,7 +104,7 @@ export type Event =
 // ---- Vacation mode ----
 export type TripInput = {
   places: string[]; // names the user typed, e.g. "New England Aquarium"
-  days: number; // 1, 3 or 7
+  days: number; // 1 to 14
   origin: LatLng; // where they're staying
   startLabel?: string; // the typed address, or "Your location"
   needs: Needs;
