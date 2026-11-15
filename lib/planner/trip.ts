@@ -1,6 +1,6 @@
 // planTrip(): Vacation mode. Find each named place, leave out inaccessible ones,
 // group the rest into days by geography, then plan each day with the same solver as Today. Owner: A.
-import type { Deps, PlanTrip } from "../contracts";
+import type { PlanTrip } from "../contracts";
 import type { LatLng, Place, Trip } from "../types";
 import { addDays, meters } from "./geo";
 import { solve } from "./solve";
@@ -88,22 +88,14 @@ export const planTrip: PlanTrip = async (input, deps) => {
   const groups = clusterDays(usable.map((x) => ({ ...x, location: x.place.location })), k, days === 1 ? usable.length : cap);
 
   // 4. Plan each day with the normal solver; hours are re-read for that day's date.
+  // Each stop is pinned to the place the user picked, so re-planning (+ / −, Start at, events)
+  // works on trip days exactly like on Today.
   const dayPlans = await Promise.all(
     groups.map(async (g, i) => {
       const day = addDays(date, i);
-      const ids = new Set(g.map((x) => x.place.id));
-      const dayDeps: Deps = {
-        ...deps,
-        findCandidates: async (want, _near, nd, dt) => {
-          const known = byId.get(want.category);
-          if (!known) return [];
-          const fresh = (await deps.findCandidates({ category: "place", query: known.name }, origin, nd, dt)).find((p) => p.id === want.category);
-          return [{ ...(fresh ?? known.place), category: known.place.category }];
-        },
-      };
       const plan = await solve(
         {
-          wants: [...ids].map((id) => ({ category: id, query: byId.get(id)!.name })),
+          wants: g.map((x) => ({ category: x.place.category, query: x.name, placeId: x.place.id })),
           start: `${day}T${DAY_START}:00${offset}`,
           end: `${day}T${DAY_END}:00${offset}`,
           origin,
@@ -111,7 +103,7 @@ export const planTrip: PlanTrip = async (input, deps) => {
           needs,
           startLabel,
         },
-        dayDeps,
+        deps,
       );
       return { date: day, plan };
     }),

@@ -49,7 +49,10 @@ export default function Home() {
   const [busy, setBusy] = useState<"" | "plan" | "replan" | "compare" | "trip">("");
   const [trip, setTrip] = useState<Trip | null>(null);
   const [tripSaved, setTripSaved] = useState(false);
-  const [visited, setVisited] = useState<Set<string>>(new Set());
+  const [visited, setVisited] = useState<Set<string>>(new Set()); // Vacation: "<date>:<placeId>"
+  const [dayVisited, setDayVisited] = useState<Set<string>>(new Set()); // Today: placeIds
+  const [tripBusyDay, setTripBusyDay] = useState<number | undefined>();
+  const [tripNewIds, setTripNewIds] = useState<Record<string, Set<string>>>({});
   const [saved, setSaved] = useState<SavedTrip[]>([]);
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
@@ -67,6 +70,7 @@ export default function Home() {
       const { date, offset, now } = localDateAndOffset();
       const t = await post<Trip>("/api/trip", { places: r.places, days: r.days, needs: r.needs, origin: r.start.origin, startAddress: r.start.address, date, offset, now });
       setTrip(t);
+      setTripNewIds({});
       setTripSaved(false);
       setVisited(new Set());
       go("trip");
@@ -96,6 +100,39 @@ export default function Home() {
     }
   }
 
+  /** Vacation: + / − or Start at on a stop re-plans that one day (and updates the saved copy). */
+  async function adjustTripDay(i: number, events: Event[]) {
+    if (!trip?.dayPlans[i]) return;
+    const day = trip.dayPlans[i];
+    setTripBusyDay(i);
+    setError("");
+    try {
+      let next = day.plan;
+      for (const e of events) next = await post<Plan>("/api/replan", { plan: next, event: e, now: localDateAndOffset().now });
+      const updated: Trip = { ...trip, dayPlans: trip.dayPlans.map((d, j) => (j === i ? { ...d, plan: next } : d)) };
+      setTripNewIds((m) => ({ ...m, [day.date]: changedIds(day.plan, next) }));
+      setTrip(updated);
+      if (tripSaved) {
+        const s = loadTrips().find((x) => x.trip.id === updated.id);
+        if (s) upsertTrip({ ...s, trip: updated });
+        setSaved(loadTrips());
+      }
+    } catch (e) {
+      fail(e);
+    } finally {
+      setTripBusyDay(undefined);
+    }
+  }
+
+  function toggleDayVisited(placeId: string, v: boolean) {
+    setDayVisited((s) => {
+      const next = new Set(s);
+      if (v) next.add(placeId);
+      else next.delete(placeId);
+      return next;
+    });
+  }
+
   async function planDay(text: string, needs: Needs, o: DayOptions) {
     setBusy("plan");
     setError("");
@@ -115,6 +152,7 @@ export default function Home() {
         now,
       });
       setPlan(p);
+      setDayVisited(new Set());
       setNormal(null);
       setNewIds(new Set());
       setView("list");
@@ -217,7 +255,16 @@ export default function Home() {
           {plan.stops.length === 0 && !plan.explanation && (
             <div className="note-line">We couldn’t plan any stops for this request. Try naming different places.</div>
           )}
-          {view === "list" ? <DayList plan={plan} newIds={newIds} startLabel="Start" endLabel="Home" onAdjust={change} busy={busy === "replan"} /> : <MapView plan={plan} />}
+          {view === "list" ? <DayList
+              plan={plan}
+              newIds={newIds}
+              startLabel="Start"
+              endLabel="Home"
+              onAdjust={change}
+              busy={busy === "replan"}
+              visited={dayVisited}
+              onVisited={toggleDayVisited}
+            /> : <MapView plan={plan} />}
           <ChangeSheet plan={plan} busy={busy === "replan"} onEvent={change} />
         </main>
       )}
@@ -241,6 +288,7 @@ export default function Home() {
           onSubmit={planTrip}
           onOpen={(s) => {
             setTrip(s.trip);
+            setTripNewIds({});
             setVisited(new Set(s.visited));
             setTripSaved(true);
             go("trip");
@@ -253,7 +301,17 @@ export default function Home() {
       )}
 
       {screen === "trip" && trip && (
-        <TripView trip={trip} saved={tripSaved} visited={visited} onVisited={toggleVisited} onSave={saveTrip} onBack={() => go("vac")} />
+        <TripView
+          trip={trip}
+          saved={tripSaved}
+          visited={visited}
+          onVisited={toggleVisited}
+          onSave={saveTrip}
+          onBack={() => go("vac")}
+          onAdjust={adjustTripDay}
+          busyDay={tripBusyDay}
+          newIds={tripNewIds}
+        />
       )}
     </div>
   );

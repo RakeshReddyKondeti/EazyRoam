@@ -3,7 +3,7 @@
 // Vacation trip (#trip): one day block per day, the places left out and why, a map per day.
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import type { Trip } from "@/lib/types";
+import type { Event, Trip } from "@/lib/types";
 import { DayList } from "./DayList";
 import { Icon } from "./Icons";
 import { StatusPill } from "./StatusPill";
@@ -23,9 +23,13 @@ type Props = {
   onVisited: (key: string, v: boolean) => void;
   onSave: () => void;
   onBack: () => void;
+  /** + / − stay and Start at on a stop: re-plans that day only. */
+  onAdjust: (dayIndex: number, events: Event[]) => void;
+  busyDay?: number; // index of the day being re-planned
+  newIds?: Record<string, Set<string>>; // changed rows per day (by date), for the highlight
 };
 
-export function TripView({ trip, saved, visited, onVisited, onSave, onBack }: Props) {
+export function TripView({ trip, saved, visited, onVisited, onSave, onBack, onAdjust, busyDay, newIds }: Props) {
   const [view, setView] = useState<"list" | "map">("list");
   const [day, setDay] = useState(0);
   const planned = trip.dayPlans.reduce((n, d) => n + d.plan.stops.length, 0);
@@ -74,6 +78,9 @@ export function TripView({ trip, saved, visited, onVisited, onSave, onBack }: Pr
                 endLabel="Back to where you’re staying"
                 visited={new Set(d.plan.stops.map((s) => s.placeId).filter((id) => visited.has(`${d.date}:${id}`)))}
                 onVisited={(id, v) => onVisited(`${d.date}:${id}`, v)}
+                onAdjust={(events) => onAdjust(i, events)}
+                busy={busyDay === i}
+                newIds={newIds?.[d.date]}
               />
             </section>
           ))}

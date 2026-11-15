@@ -68,3 +68,16 @@ describe("flexible trip length", () => {
     expect(trip.dayPlans.every((d) => d.plan.stops.length <= 3)).toBe(true);
   });
 });
+
+describe("adjusting a trip day", () => {
+  it("+ / − on a Vacation stop re-plans that day and keeps the picked place", async () => {
+    const { replan } = await import("@/lib/planner");
+    const trip = await planTrip(input, deps);
+    const day = trip.dayPlans.find((d) => d.plan.stops.some((s) => s.placeId === "art-museum"))!;
+    expect(day.plan.request.wants.find((w) => w.placeId === "art-museum")).toBeTruthy();
+    const next = await replan(day.plan, { type: "setStay", placeId: "art-museum", minutes: 45 }, "2026-11-13T09:00:00-05:00", deps);
+    const m = next.stops.find((s) => s.placeId === "art-museum")!;
+    expect((Date.parse(m.depart) - Date.parse(m.arrive)) / 60000).toBe(45);
+    expect(next.stops.map((s) => s.placeId).sort()).toEqual(day.plan.stops.map((s) => s.placeId).sort());
+  });
+});
