@@ -26,13 +26,24 @@ export function roughMinutes(a: LatLng, b: LatLng): number {
 export const rollMinutes = (a: LatLng, b: LatLng) =>
   Math.max(1, Math.ceil((meters(a, b) * 1.3) / ROLL_M_PER_MIN));
 
+// Realistic stays for a wheelchair user, incl. finding the accessible entrance, seating, restroom. First match wins.
 const VISIT: [RegExp, number][] = [
-  [/museum|gallery|zoo|aquarium/, 120],
-  [/lunch|dinner|restaurant|brunch|breakfast/, 60],
-  [/coffee|cafe|café|bakery/, 30],
-  [/pharmacy|post office|bank|atm/, 15],
-  [/park|garden|library/, 60],
-  [/gift|shop|store|book|grocery|market|mall/, 40],
+  [/sports|stadium|arena|\bgame\b|baseball|football|basketball|hockey/, 210],
+  [/movie|cinema|film/, 150], // before "theater": Google calls cinemas "Movie theater"
+  [/theat(er|re)|concert|\bshow\b|musical|opera|ballet|symphony|comedy/, 180],
+  [/zoo|amusement|theme park|aquarium/, 180],
+  [/museum|gallery|exhibit/, 120],
+  [/mall|shopping center|outlet/, 120],
+  [/spa|massage|salon|hair|nails|barber/, 75],
+  [/bowling|gym|fitness|swim|pool|yoga|class|lesson|church|mosque|temple|synagogue|service/, 75],
+  [/dinner|lunch|brunch|restaurant|sushi|pizza|bistro|diner|steak|bbq/, 75],
+  [/breakfast/, 50],
+  [/doctor|dentist|clinic|hospital|appointment|therapy|physio/, 60],
+  [/park|garden|library|beach|waterfront|walk/, 60],
+  [/coffee|cafe|café|bakery|ice cream|tea/, 30],
+  [/grocery|supermarket|market/, 40],
+  [/gift|shop|store|book|boutique|hardware|clothes/, 40],
+  [/pharmacy|post office|bank|atm|drop off|pick up|errand/, 15],
 ];
 
 /** Default visit length in minutes for a category. */
@@ -45,6 +56,15 @@ export const addMin = (iso: string, min: number) => shiftIso(iso, min * 60000);
 export const diffMin = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 60000);
 export const before = (a: string, b: string) => Date.parse(a) < Date.parse(b);
 export const maxIso = (a: string, b: string) => (Date.parse(a) >= Date.parse(b) ? a : b);
+
+/** "2026-11-14" + 2 → "2026-11-16" */
+export function addDays(date: string, n: number): string {
+  return new Date(Date.parse(`${date}T12:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+}
+
+/** ISO time rounded up to the next `step` minutes, in the given offset ("-05:00"). */
+export const roundUpIso = (iso: string, step: number, off: string) =>
+  toOffsetIso(Math.ceil(Date.parse(iso) / (step * 60000)) * step * 60000, off);
 
 /** Shift an ISO time while keeping its UTC offset suffix, so times stay in the request's zone. */
 export function shiftIso(iso: string, ms: number): string {

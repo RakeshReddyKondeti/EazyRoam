@@ -30,7 +30,8 @@
       "noSteps": true,
       "gentleSlopes": true,
       "restroom": false
-    }
+    },
+    "startLabel": "UMass Amherst, Amherst, MA (sample)"
   },
   "places": {
     "lunch-1": {
@@ -194,7 +195,25 @@
           "wheelchair": "yes"
         }
       ],
-      "issues": []
+      "issues": [],
+      "steps": [
+        {
+          "kind": "roll",
+          "minutes": 4,
+          "to": "Haigis Mall"
+        },
+        {
+          "kind": "bus",
+          "minutes": 37,
+          "line": "B43",
+          "from": "Haigis Mall",
+          "to": "Pulaski Park"
+        },
+        {
+          "kind": "roll",
+          "minutes": 4
+        }
+      ]
     },
     {
       "fromId": "lunch-1",
@@ -205,7 +224,13 @@
       "minutes": 10,
       "polyline": "",
       "stops": [],
-      "issues": []
+      "issues": [],
+      "steps": [
+        {
+          "kind": "roll",
+          "minutes": 10
+        }
+      ]
     },
     {
       "fromId": "gift-1",
@@ -218,6 +243,12 @@
       "stops": [],
       "issues": [
         "Gentle slope on Elm St"
+      ],
+      "steps": [
+        {
+          "kind": "roll",
+          "minutes": 15
+        }
       ]
     },
     {
@@ -246,7 +277,25 @@
           "wheelchair": "yes"
         }
       ],
-      "issues": []
+      "issues": [],
+      "steps": [
+        {
+          "kind": "roll",
+          "minutes": 4,
+          "to": "Pulaski Park"
+        },
+        {
+          "kind": "bus",
+          "minutes": 37,
+          "line": "B43",
+          "from": "Pulaski Park",
+          "to": "Haigis Mall"
+        },
+        {
+          "kind": "roll",
+          "minutes": 4
+        }
+      ]
     }
   ],
   "endAt": "2026-11-14T16:40:00-05:00",

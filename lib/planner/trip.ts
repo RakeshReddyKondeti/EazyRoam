@@ -2,17 +2,13 @@
 // group the rest into days by geography, then plan each day with the same solver as Today. Owner: A.
 import type { Deps, PlanTrip } from "../contracts";
 import type { LatLng, Place, Trip } from "../types";
-import { meters } from "./geo";
+import { addDays, meters } from "./geo";
 import { solve } from "./solve";
 
 const DAY_START = "10:00";
 const DAY_END = "20:00";
 
-/** "2026-11-14" + 2 → "2026-11-16" */
-export function addDays(date: string, n: number): string {
-  const t = Date.parse(`${date}T12:00:00Z`) + n * 86400000;
-  return new Date(t).toISOString().slice(0, 10);
-}
+export { addDays } from "./geo";
 
 const centroid = (ps: { location: LatLng }[]): LatLng => ({
   lat: ps.reduce((s, p) => s + p.location.lat, 0) / ps.length,
@@ -65,7 +61,7 @@ export function clusterDays<T extends { location: LatLng }>(places: T[], k: numb
 }
 
 export const planTrip: PlanTrip = async (input, deps) => {
-  const { places: names, days, origin, needs, date, offset } = input;
+  const { places: names, days, origin, needs, date, offset, startLabel } = input;
 
   // 1. Find each place (top search result near where they're staying).
   const found = await Promise.all(
@@ -107,6 +103,7 @@ export const planTrip: PlanTrip = async (input, deps) => {
           origin,
           home: origin,
           needs,
+          startLabel,
         },
         dayDeps,
       );

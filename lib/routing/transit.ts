@@ -76,11 +76,25 @@ export function mapRoute(r: GRoute): TransitRoute {
   return { minutes: mins(r.duration), polyline: r.polyline?.encodedPolyline ?? "", segments };
 }
 
-/** Transit alternatives from a to b leaving at departAt (moved to now if in the past). */
+const WEEK = 7 * 86400000;
+
+/**
+ * When to ask Google for. Google only routes future departures, so a time that has already passed
+ * (planning "leave at 11" in the evening) moves to the same weekday and time next week: schedules
+ * repeat weekly, so durations stay realistic. Querying "now" instead gave late-night waits. Exported for tests.
+ */
+export function queryDeparture(departAt: string, now = Date.now()): Date {
+  let t = Date.parse(departAt);
+  while (t < now + 60000) t += WEEK;
+  const d = new Date(t);
+  d.setUTCMinutes(Math.ceil(d.getUTCMinutes() / 10) * 10, 0, 0); // 10-min buckets share cache
+  return d;
+}
+
+/** Transit alternatives from a to b for a departure at departAt's weekday and time. */
 export async function transitRoutes(a: LatLng, b: LatLng, departAt: string, cached: Cached): Promise<TransitRoute[]> {
   const key = requireKey("GOOGLE_MAPS_API_KEY");
-  const depart = new Date(Math.max(Date.parse(departAt), Date.now() + 60000));
-  depart.setUTCMinutes(Math.ceil(depart.getUTCMinutes() / 10) * 10, 0, 0); // 10-min buckets share cache
+  const depart = queryDeparture(departAt);
   const r5 = (n: number) => n.toFixed(5);
   const cacheKey = `routes:${r5(a.lat)},${r5(a.lng)}>${r5(b.lat)},${r5(b.lng)}@${depart.toISOString()}`;
 

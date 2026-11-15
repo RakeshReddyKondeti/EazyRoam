@@ -41,7 +41,15 @@ export type ComparePlan = (req: Request, deps: Deps) => Promise<Plan>;
 export type PlanTrip = (input: TripInput, deps: Deps) => Promise<Trip>;
 
 // ---- C implements (lib/ai) ----
-export type ParseCtx = { date: string; offset: string }; // "2026-11-14", "-05:00"
+/** The user's local date and offset ("2026-11-14", "-05:00") and, when known, their current time (ISO). */
+export type ParseCtx = {
+  date: string;
+  offset: string;
+  now?: string;
+  /** "HH:MM" from the Leave at / Done by fields; they win over times written in the text. */
+  leaveAt?: string;
+  doneBy?: string;
+};
 export type ParseRequest = (
   text: string,
   needs: Needs,

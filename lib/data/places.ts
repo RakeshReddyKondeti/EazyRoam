@@ -3,6 +3,7 @@ import type { FindCandidates, Geocode } from "../contracts";
 import { cached } from "../db/cache";
 import { getReports } from "../db/reports";
 import { fetchJson, requireKey } from "../http";
+import { log } from "../log";
 import { toOffsetIso } from "../planner/geo";
 import type { Access, Hours, Place } from "../types";
 import { mergeAccess, osmLookup } from "./osm";
@@ -131,6 +132,8 @@ export const findCandidates: FindCandidates = async (want, near, _needs, date) =
       p.sources.push("report");
     }
   }
+  const count = (a: string) => places.filter((p) => p.overall === a).length;
+  log("places", `"${q}" → ${places.length} found (accessible ${count("yes")}, partly ${count("limited")}, not ${count("no")}, unknown ${count("unknown")})`);
   return places;
 };
 

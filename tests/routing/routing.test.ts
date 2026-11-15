@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { pickStop } from "@/lib/routing/stops";
-import { mapRoute } from "@/lib/routing/transit";
+import { stepsOf } from "@/lib/routing/legs";
+import { mapRoute, queryDeparture } from "@/lib/routing/transit";
 
 describe("mapRoute (Google Routes → segments)", () => {
   it("maps walk + transit steps and merges consecutive walks", () => {
@@ -59,5 +60,34 @@ describe("pickStop (Transitland → access)", () => {
     expect(pickStop([{ stop_name: "X", wheelchair_boarding: 0, parent: { wheelchair_boarding: 2 } }], "X", at)).toBe("no");
     expect(pickStop([], "X", at)).toBe("unknown");
     expect(pickStop([{ stop_name: "X" }], "X", at)).toBe("unknown");
+  });
+});
+
+describe("queryDeparture (times that already passed)", () => {
+  const now = Date.parse("2026-11-14T19:30:00-05:00"); // Saturday evening
+  it("moves a past departure to the same weekday and time next week", () => {
+    expect(queryDeparture("2026-11-14T11:05:00-05:00", now).toISOString()).toBe("2026-11-21T16:10:00.000Z"); // 11:10 EST next Sat
+  });
+  it("keeps future departures (rounded up to 10 min)", () => {
+    expect(queryDeparture("2026-11-15T09:02:00-05:00", now).toISOString()).toBe("2026-11-15T14:10:00.000Z");
+  });
+});
+
+describe("stepsOf (route → roll / ride steps)", () => {
+  it("names the stop each roll leads to", () => {
+    const steps = stepsOf({
+      minutes: 50,
+      polyline: "",
+      segments: [
+        { kind: "walk", minutes: 4, from: { lat: 0, lng: 0 }, to: { lat: 0, lng: 0 } },
+        { kind: "transit", minutes: 38, vehicle: "bus", line: "101", board: { name: "Mission St & 3rd St", location: { lat: 0, lng: 0 } }, alight: { name: "Toll Plaza", location: { lat: 0, lng: 0 } } },
+        { kind: "walk", minutes: 3, from: { lat: 0, lng: 0 }, to: { lat: 0, lng: 0 } },
+      ],
+    });
+    expect(steps).toEqual([
+      { kind: "roll", minutes: 4, to: "Mission St & 3rd St" },
+      { kind: "bus", minutes: 38, line: "101", from: "Mission St & 3rd St", to: "Toll Plaza" },
+      { kind: "roll", minutes: 3, to: undefined },
+    ]);
   });
 });

@@ -12,7 +12,7 @@ import { BadRequest, errorResponse, readJson } from "../_lib/errors";
 import { fixturesOn } from "../_lib/fixtures";
 
 type Body = { plan?: Plan; event?: Event; now?: string };
-const KINDS = new Set(["rampBlocked", "elevatorOut", "late", "addStop"]);
+const KINDS = new Set(["rampBlocked", "elevatorOut", "late", "addStop", "setStay", "setTime"]);
 
 /** Reports help the next person; they never block the re-plan. */
 async function remember(e: Event) {

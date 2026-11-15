@@ -1,6 +1,7 @@
 // makePlan(): choose one place per want and the order, then schedule real legs. Owner: A.
 import type { BuildLeg, Deps, Endpoint, MakePlan } from "../contracts";
 import { buildLeg as realBuildLeg, legProblems } from "../routing/legs";
+import { log } from "../log";
 import type { Leg, Place, Plan, PlanStop, Request, Want } from "../types";
 import { addMin, before, diffMin, maxIso, roughMinutes, visitMinutes } from "./geo";
 
@@ -44,19 +45,32 @@ function product<T>(lists: T[][]): T[][] {
 
 type Visit = { arrive: string; depart: string; reasons: string[]; late: boolean };
 
-/** Arrival at `t`: wait for opening, check the visit fits before closing. */
-function visit(place: Place, t: string): Visit {
-  const len = visitMinutes(`${place.category} ${place.kind ?? ""}`);
-  const w = windowFor(place, t);
-  if (w === "unlisted") return { arrive: t, depart: addMin(t, len), reasons: ["Opening hours not listed"], late: false };
-  if (!w) return { arrive: t, depart: addMin(t, len), reasons: ["Closed by the time you arrive"], late: true };
-  const arrive = maxIso(t, w.open);
-  const depart = addMin(arrive, len);
+/** "HH:MM" on the same day and offset as `t`. */
+const sameDay = (t: string, hm: string) => `${t.slice(0, 11)}${hm}:00${t.match(/([+-]\d{2}:\d{2}|Z)$/)?.[1] ?? "Z"}`;
+
+/** How long to stay: the user's words (via the parser) or a default for the kind of place. */
+export const stayMinutes = (place: Place, want?: Want) =>
+  want?.minutes && want.minutes > 0 ? Math.min(want.minutes, 600) : visitMinutes(`${place.category} ${place.kind ?? ""}`);
+
+/** Arrival at `t`: wait for opening (and the user's "at" time), check the visit fits before closing. */
+function visit(place: Place, t: string, want?: Want): Visit {
+  const len = stayMinutes(place, want);
+  const notBefore = want?.at && /^\d{2}:\d{2}$/.test(want.at) ? sameDay(t, want.at) : t;
   const reasons: string[] = [];
-  if (before(t, w.open)) reasons.push(`Opens at ${fmt(w.open)}`);
-  const late = before(w.close, depart);
-  if (late) reasons.push(`Closes at ${fmt(w.close)}, ${diffMin(arrive, w.close)} min after you arrive`);
-  return { arrive, depart, reasons, late };
+  if (before(t, notBefore)) reasons.push(`Planned for ${fmt(notBefore)}, as you asked`);
+  // A set start time (movie, show, appointment): arriving after it means missing the start.
+  const missed = want?.at && diffMin(notBefore, t) > 5;
+  if (missed) reasons.push(`You’d arrive ${diffMin(notBefore, t)} min after it starts at ${fmt(notBefore)}`);
+  const ready = maxIso(t, notBefore);
+  const w = windowFor(place, ready);
+  if (w === "unlisted") return { arrive: ready, depart: addMin(ready, len), reasons: [...reasons, "Opening hours not listed"], late: Boolean(missed) };
+  if (!w) return { arrive: ready, depart: addMin(ready, len), reasons: [...reasons, "Closed by the time you arrive"], late: true };
+  const arrive = maxIso(ready, w.open);
+  const depart = addMin(arrive, len);
+  if (before(ready, w.open)) reasons.push(`Opens at ${fmt(w.open)}`);
+  const closesEarly = before(w.close, depart);
+  if (closesEarly) reasons.push(`Closes at ${fmt(w.close)}, ${diffMin(arrive, w.close)} min after you arrive`);
+  return { arrive, depart, reasons, late: closesEarly || Boolean(missed) };
 }
 
 function accessStatus(p: Place, req: Request, accessible: boolean): { status: PlanStop["status"]; reasons: string[] } {
@@ -76,9 +90,9 @@ function roughScore(c: Choice, startAt: string, from: Endpoint, req: Request): n
   let t = startAt;
   let pos = "location" in from ? from.location : from;
   let score = 0;
-  for (const p of c.places) {
+  for (const [i, p] of c.places.entries()) {
     const travel = roughMinutes(pos, p.location);
-    const v = visit(p, addMin(t, travel));
+    const v = visit(p, addMin(t, travel), c.order[i]);
     score += travel + diffMin(addMin(t, travel), v.arrive) * 0.5 + (v.late ? 500 : 0);
     if (p.overall !== "yes") score += 30;
     t = v.depart;
@@ -105,18 +119,22 @@ export async function solve(req: Request, deps: Deps, o: SolveOpts = {}): Promis
   const pools: Place[][] = [];
   const wants: Want[] = [];
   raw.forEach((list, i) => {
-    const usable = accessible
-      ? list.filter((p) => p.overall !== "no" && !excluded.has(p.id)).slice(0, CANDIDATES_PER_WANT)
-      : list.slice(0, 1);
+    const pin = req.wants[i].placeId;
+    const pinned = pin ? list.filter((p) => p.id === pin && !excluded.has(p.id)) : [];
+    const usable = pinned.length
+      ? pinned // the user adjusted this stop: keep the same place
+      : accessible
+        ? list.filter((p) => p.overall !== "no" && !excluded.has(p.id)).slice(0, CANDIDATES_PER_WANT)
+        : list.slice(0, 1);
     if (usable.length) {
       pools.push(usable);
       wants.push(req.wants[i]);
     } else missing.push(req.wants[i].category);
   });
 
-  // 2. Every venue choice × order (user's order only for Compare or long lists), ranked roughly.
+  // 2. Every venue choice × order (user's order only for Compare, "first … then …", or long lists), ranked roughly.
   const idx = wants.map((_, i) => i);
-  const orders = !accessible || idx.length > MAX_PERMUTE ? [idx] : permutations(idx);
+  const orders = !accessible || req.inOrder || idx.length > MAX_PERMUTE ? [idx] : permutations(idx);
   const choices: Choice[] = [];
   for (const order of orders)
     for (const pick of product(order.map((i) => pools[i])))
@@ -144,11 +162,11 @@ export async function solve(req: Request, deps: Deps, o: SolveOpts = {}): Promis
       let pos = from;
       let unknowns = 0;
       let problems = 0;
-      for (const p of c.places) {
+      for (const [i, p] of c.places.entries()) {
         const l = await leg(pos, p, t);
         legs.push(l);
         problems += legProblems(l);
-        const v = visit(p, l.arriveAt);
+        const v = visit(p, l.arriveAt, c.order[i]);
         const a = accessStatus(p, req, accessible);
         let status = a.status;
         if (v.late) status = "bad";
@@ -183,12 +201,17 @@ export async function solve(req: Request, deps: Deps, o: SolveOpts = {}): Promis
         constraints: { excludedPlaceIds: [...excluded], blockedStops },
       };
       if (missing.length) plan.explanation = `Couldn’t find an accessible ${missing.join(" or ")} nearby.`;
-      if (before(req.end, endAt)) plan.explanation = [plan.explanation, `You’d be home at ${fmt(endAt)}, after ${fmt(req.end)}.`].filter(Boolean).join(" ");
+      if (before(req.end, endAt)) {
+        const nextDay = endAt.slice(0, 10) > req.end.slice(0, 10) ? " (the next day)" : "";
+        const late = `This day doesn’t fit: you’d get home at ${fmt(endAt)}${nextDay}, but you wanted to be home by ${fmt(req.end)}. Try fewer stops, shorter visits or an earlier start.`;
+        plan.explanation = [plan.explanation, late].filter(Boolean).join(" ");
+      }
       return { plan, score: minutes + 30 * unknowns + 200 * problems };
     }),
   );
 
   if (!plans.length) {
+    log("plan", `no plan: nothing usable for ${missing.join(", ") || "any want"}`);
     return {
       id: crypto.randomUUID(),
       request: req,
@@ -202,7 +225,13 @@ export async function solve(req: Request, deps: Deps, o: SolveOpts = {}): Promis
     };
   }
   plans.sort((a, b) => a.score - b.score);
-  return plans[0].plan;
+  const best = plans[0].plan;
+  log(
+    "plan",
+    `${accessible ? "EazyRoam" : "normal-app"}: ${choices.length} options → ${best.stops.length} stops, ${best.problems} problems, home ${best.endAt.slice(11, 16)}` +
+      (missing.length ? `, missing: ${missing.join(", ")}` : ""),
+  );
+  return best;
 }
 
 export const makePlan: MakePlan = (req, deps, constraints) => solve(req, deps, { constraints });

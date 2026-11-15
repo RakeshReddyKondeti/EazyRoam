@@ -13,9 +13,13 @@ type Body = {
   needs?: Needs;
   origin?: LatLng;
   startAddress?: string;
-  home?: LatLng;
+  home?: LatLng; // where the day ends (omit = back to the start)
+  endAddress?: string; // typed end address (used when `home` is not given)
+  leaveAt?: string; // "HH:MM" from the Leave at field
+  doneBy?: string; // "HH:MM" from the Done by field
   date?: string; // YYYY-MM-DD, the user's local date
   offset?: string; // "-05:00"
+  now?: string; // the user's current local time, ISO with offset
 };
 
 const DEFAULT_NEEDS: Needs = { noSteps: true, gentleSlopes: true, restroom: false };
@@ -28,13 +32,35 @@ export async function POST(req: Request) {
     if (!b.date || !/^\d{4}-\d{2}-\d{2}$/.test(b.date) || !b.offset || !/^[+-]\d{2}:\d{2}$/.test(b.offset))
       throw new BadRequest("Missing date/offset.");
     let origin = b.origin;
+    let startLabel = "Your location";
     if (!origin) {
       if (!b.startAddress?.trim()) throw new BadRequest("Where are you starting from? Share your location or type an address.");
-      origin = await geocode(b.startAddress);
+      const g = await geocode(b.startAddress);
+      origin = g;
+      startLabel = g.label;
     }
     const start = { lat: origin.lat, lng: origin.lng };
-    const request = await parseRequest(b.text, b.needs ?? DEFAULT_NEEDS, start, b.home ?? start, { date: b.date, offset: b.offset });
-    return Response.json(await makePlan(request, realDeps));
+    let end: LatLng = start;
+    let endLabel: string | undefined;
+    if (b.home) {
+      end = { lat: b.home.lat, lng: b.home.lng };
+      endLabel = "Your location";
+    } else if (b.endAddress?.trim()) {
+      const g = await geocode(b.endAddress);
+      end = { lat: g.lat, lng: g.lng };
+      endLabel = g.label;
+    }
+    const now = b.now && !Number.isNaN(Date.parse(b.now)) ? b.now : undefined;
+    const request = await parseRequest(b.text, b.needs ?? DEFAULT_NEEDS, start, end, {
+      date: b.date,
+      offset: b.offset,
+      now,
+      leaveAt: b.leaveAt,
+      doneBy: b.doneBy,
+    });
+    const plan = await makePlan({ ...request, startLabel, endLabel }, realDeps);
+    if (request.note) plan.explanation = [request.note, plan.explanation].filter(Boolean).join(" ");
+    return Response.json(plan);
   } catch (e) {
     return errorResponse(e);
   }

@@ -3,6 +3,9 @@ import type { Replan } from "../contracts";
 import type { Place, Want } from "../types";
 import { addMin, before, maxIso } from "./geo";
 import { solve } from "./solve";
+import { wantFor } from "./wants";
+
+export { wantFor };
 
 export const replan: Replan = async (plan, event, now, deps) => {
   const excluded = new Set(plan.constraints?.excludedPlaceIds ?? []);
@@ -23,6 +26,17 @@ export const replan: Replan = async (plan, event, now, deps) => {
     case "addStop":
       wants = [...wants, { category: event.category, query: event.category }];
       break;
+    case "setStay":
+    case "setTime": {
+      const i = wantFor(plan, wants, event.placeId);
+      if (i < 0) break;
+      const w = { ...wants[i], placeId: event.placeId }; // keep the venue the user adjusted
+      if (event.type === "setStay") w.minutes = Math.max(5, Math.min(600, Math.round(event.minutes)));
+      else if (event.at) w.at = event.at;
+      else delete w.at;
+      wants = wants.map((x, j) => (j === i ? w : x));
+      break;
+    }
   }
 
   // Stops already finished stay as they are; their wants are done.

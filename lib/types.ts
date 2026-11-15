@@ -5,7 +5,14 @@ export type LatLng = { lat: number; lng: number };
 export type Access = "yes" | "limited" | "no" | "unknown";
 export type Needs = { noSteps: boolean; gentleSlopes: boolean; restroom: boolean };
 
-export type Want = { category: string; query?: string }; // "lunch", "gift shop", "museum"
+export type Want = {
+  category: string; // "lunch", "gift shop", "museum"
+  query?: string; // what to search, e.g. "birthday gift shop" or a named place
+  minutes?: number; // how long to stay; the user's words or a realistic estimate
+  at?: string; // "HH:MM": start at this time ("lunch at 1", "the 5 pm movie")
+  timed?: boolean; // happens at a set time (movie, show, game, appointment): ask for it if `at` is missing
+  placeId?: string; // keep this exact place (set when the user adjusts a stop in the plan)
+};
 export type Request = {
   wants: Want[];
   start: string; // ISO times
@@ -13,6 +20,10 @@ export type Request = {
   origin: LatLng;
   home: LatLng;
   needs: Needs;
+  inOrder?: boolean; // true = keep the user's order ("first …, then …")
+  startLabel?: string; // shown on the Start/Home rows: the typed address, or "Your location"
+  endLabel?: string; // set only when the day ends somewhere other than the start
+  note?: string; // e.g. "11:00 AM has already passed today, so this plan is for tomorrow."
 };
 
 export type Hours = { open: string; close: string }[]; // today's periods, ISO
@@ -48,6 +59,17 @@ export type Leg = {
   polyline: string;
   stops: Stop[];
   issues: string[];
+  /** How you travel, in order: roll to the stop, ride, roll on. Older/fixture legs may omit it. */
+  steps?: LegStep[];
+};
+
+/** One part of a leg. `from`/`to` are stop names for rides; `to` is a stop name for rolls to a stop. */
+export type LegStep = {
+  kind: "roll" | "bus" | "rail";
+  minutes: number;
+  line?: string; // "101", "Red Line"
+  from?: string;
+  to?: string;
 };
 
 export type PlanStop = {
@@ -75,13 +97,16 @@ export type Event =
   | { type: "rampBlocked"; placeId: string }
   | { type: "elevatorOut"; stopName: string }
   | { type: "late"; minutes: number }
-  | { type: "addStop"; category: string };
+  | { type: "addStop"; category: string }
+  | { type: "setStay"; placeId: string; minutes: number } // the + / − buttons
+  | { type: "setTime"; placeId: string; at: string | null }; // "Start at" on a stop ("HH:MM", null = any time)
 
 // ---- Vacation mode ----
 export type TripInput = {
   places: string[]; // names the user typed, e.g. "New England Aquarium"
   days: number; // 1, 3 or 7
   origin: LatLng; // where they're staying
+  startLabel?: string; // the typed address, or "Your location"
   needs: Needs;
   date: string; // first day, YYYY-MM-DD
   offset: string; // "-05:00"

@@ -1,8 +1,9 @@
 // buildLeg(): one accessible (or, for Compare, fastest) leg between two points. Owner: A.
 import type { BuildLeg, Deps, Endpoint, LegOpts } from "../contracts";
 import { hasKey } from "../http";
+import { log } from "../log";
 import { ROLL_LIMIT_M, addMin, meters, rollMinutes } from "../planner/geo";
-import type { LatLng, Leg, Needs, Stop } from "../types";
+import type { LatLng, Leg, LegStep, Needs, Stop } from "../types";
 import { rollRoute } from "./roll";
 import { stopAccess } from "./stops";
 import { type TransitRoute, transitRoutes } from "./transit";
@@ -29,7 +30,30 @@ async function rollLeg(from: Endpoint, to: Endpoint, departAt: string, needs: Ne
       issues.push("No step-free sidewalk route found");
     }
   } else issues.push("Sidewalk route not checked");
-  return { fromId: from.id, toId: to.id, mode: "roll", departAt, arriveAt: addMin(departAt, minutes), minutes, polyline, stops: [], issues };
+  return {
+    fromId: from.id,
+    toId: to.id,
+    mode: "roll",
+    departAt,
+    arriveAt: addMin(departAt, minutes),
+    minutes,
+    polyline,
+    stops: [],
+    issues,
+    steps: [{ kind: "roll", minutes }],
+  };
+}
+
+/** Roll → ride → roll, in order. A roll's `to` is the stop it leads to (none = the destination). Exported for tests. */
+export function stepsOf(route: TransitRoute): LegStep[] {
+  const steps: LegStep[] = [];
+  route.segments.forEach((s, i) => {
+    if (s.kind === "walk") {
+      const next = route.segments.slice(i + 1).find((n) => n.kind === "transit");
+      steps.push({ kind: "roll", minutes: s.minutes, to: next?.kind === "transit" ? next.board.name : undefined });
+    } else steps.push({ kind: s.vehicle, minutes: s.minutes, line: s.line || undefined, from: s.board.name, to: s.alight.name });
+  });
+  return steps;
 }
 
 /** Turn one Google transit route into a Leg with every stop checked. */
@@ -65,8 +89,6 @@ async function annotate(
   });
 
   const issues: string[] = [];
-  const lines = route.segments.flatMap((s) => (s.kind === "transit" && s.line ? [s.line] : []));
-  if (lines.length) issues.push(`${rail ? "Line" : "Route"} ${lines.join(" → ")}`);
   for (const s of stops) if (s.reliability != null && s.reliability < 0.8) issues.push(`${s.name}: elevator often out`);
 
   // Accessible mode: the walking parts must be step-free too (checked with ORS when we have a key).
@@ -92,6 +114,7 @@ async function annotate(
     polyline: route.polyline,
     stops,
     issues,
+    steps: stepsOf(route),
   };
 }
 
@@ -101,6 +124,7 @@ export const buildLeg: BuildLeg = async (from, to, departAt, needs, deps, opts =
   if (meters(a, b) * 1.3 <= ROLL_LIMIT_M) return rollLeg(from, to, departAt, needs, deps);
 
   const routes = await transitRoutes(a, b, departAt, deps.cached);
+  log("routes", `${from.id.slice(0, 12)} → ${to.id.slice(0, 12)}: ${routes.length} transit option(s)`);
   if (!routes.length) {
     // No transit: roll if it's still a reasonable distance, otherwise say so.
     const leg = await rollLeg(from, to, departAt, needs, deps);
