@@ -302,3 +302,21 @@ button.pin{cursor:pointer;padding:0}
 .adjust-apply{align-self:flex-start;background:var(--accent);color:var(--accent-ink)}
 .adjust-apply:hover{background:var(--accent);filter:brightness(1.06)}
 .needs-time{margin-left:var(--s2)}
+
+/* ---------- 15. Vacation: trip length ---------- */
+.triplen{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
+
+/* ---------- 16. Vacation: top sights to pick from ---------- */
+.sights-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2)}
+.sights{display:grid;grid-template-columns:1fr;gap:var(--s2);margin:0;padding:0;list-style:none}
+@media (min-width:480px){.sights{grid-template-columns:1fr 1fr}}
+.sight{display:flex;align-items:flex-start;gap:var(--s3);width:100%;height:100%;min-height:var(--tap-lg);padding:var(--s3);border:1.5px solid var(--line);border-radius:var(--r-lg);background:var(--surface);text-align:left;transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease)}
+.sight:hover{border-color:var(--accent)}
+.sight.on{border-color:var(--accent);background:var(--lilac)}
+.sight-check{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-weight:700;color:var(--muted)}
+.sight.on .sight-check{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.sight-body{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sight-body b{font-weight:700;line-height:1.3}
+.sight-body small{font-size:var(--text-sm);color:var(--muted)}
+.sight-body .achip{align-self:flex-start;display:inline-flex;align-items:center;gap:4px}
+.sight-body .achip svg.i{width:14px;height:14px}

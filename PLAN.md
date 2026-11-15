@@ -114,7 +114,8 @@ Nobody edits contracts inside a feature branch.
 | `POST /api/replan` | `{ plan, event, now }` → `Plan` (calls `replan`, `explainChange`, `addReport`/`recordEvent`) |
 | `POST /api/compare` | `{ request }` → `Plan` (calls `comparePlan`) |
 | `GET /api/geocode?q=` | → `{ lat, lng, label }` (calls `geocode`) |
-| `POST /api/trip` | `{ places, days: 1\|3\|7, origin? or startAddress?, needs, date, offset }` → `Trip` (calls `planTrip`) |
+| `POST /api/trip` | `{ places, days: 1–14, origin? or startAddress?, needs, date, offset }` → `Trip` (calls `planTrip`) |
+| `GET /api/attractions?city=` | → `{ city, attractions }`: top 15 sights with entrance access (calls `topAttractions`) |
 
 ## 4. Fixtures and stubs (so nobody waits)
 - `fixtures/request.sample.json`, `fixtures/places.sample.json`, `fixtures/legs.sample.json`, `fixtures/plan.sample.json` and `fixtures/plan.compare.json` are hand-written in hour 0 from the types. Use a real Amherst → Northampton day.

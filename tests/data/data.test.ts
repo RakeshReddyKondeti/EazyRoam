@@ -81,3 +81,21 @@ describe("elevator outages", () => {
     expect([...out].sort()).toEqual(["Downtown Crossing", "Park Street"]);
   });
 });
+
+describe("top attractions", () => {
+  it("ranks by popularity, dedupes, and never marks missing access as accessible", async () => {
+    const { rankAttractions } = await import("@/lib/data/attractions");
+    const list = rankAttractions([
+      { id: "a", displayName: { text: "Quiet Garden" }, location: { latitude: 1, longitude: 1 }, userRatingCount: 50 },
+      { id: "b", displayName: { text: "Big Aquarium" }, location: { latitude: 1, longitude: 1 }, userRatingCount: 9000, rating: 4.7, accessibilityOptions: { wheelchairAccessibleEntrance: true } },
+      { id: "b", displayName: { text: "Big Aquarium" }, location: { latitude: 1, longitude: 1 }, userRatingCount: 9000 },
+      { id: "c", displayName: { text: "Old Tower" }, location: { latitude: 1, longitude: 1 }, userRatingCount: 700, accessibilityOptions: { wheelchairAccessibleEntrance: false } },
+      { id: "d", location: { latitude: 1, longitude: 1 } },
+    ]);
+    expect(list.map((a) => [a.name, a.access])).toEqual([
+      ["Big Aquarium", "yes"],
+      ["Old Tower", "no"],
+      ["Quiet Garden", "unknown"],
+    ]);
+  });
+});

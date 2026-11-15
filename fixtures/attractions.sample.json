@@ -1,0 +1,8 @@
+[
+  { "id": "sample-a1", "name": "Smith College Museum of Art", "kind": "Art museum", "address": "20 Elm St, Northampton, MA", "location": { "lat": 42.3172, "lng": -72.6386 }, "rating": 4.8, "ratings": 640, "access": "yes" },
+  { "id": "sample-a2", "name": "Draft Botanic Garden", "kind": "Botanical garden", "address": "College Ln, Northampton, MA", "location": { "lat": 42.3169, "lng": -72.6402 }, "rating": 4.7, "ratings": 520, "access": "yes" },
+  { "id": "sample-a3", "name": "Draft Historic Theater", "kind": "Performing arts theater", "address": "Main St, Northampton, MA", "location": { "lat": 42.3183, "lng": -72.6319 }, "rating": 4.6, "ratings": 410, "access": "unknown" },
+  { "id": "sample-a4", "name": "Draft Riverside Park", "kind": "Park", "address": "Damon Rd, Northampton, MA", "location": { "lat": 42.3291, "lng": -72.6122 }, "rating": 4.5, "ratings": 380, "access": "unknown" },
+  { "id": "sample-a5", "name": "Draft Hilltop Lookout", "kind": "Scenic spot", "address": "Mt Holyoke, MA", "location": { "lat": 42.3006, "lng": -72.5880 }, "rating": 4.8, "ratings": 300, "access": "no" },
+  { "id": "sample-a6", "name": "Draft Book Museum", "kind": "Museum", "address": "Bay Rd, Amherst, MA", "location": { "lat": 42.3354, "lng": -72.5291 }, "rating": 4.7, "ratings": 260, "access": "yes" }
+]

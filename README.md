@@ -20,7 +20,7 @@ Built at **HackUMass 19**. Team plan, ownership and contracts: **[PLAN.md](PLAN.
 - **Something changed?** Ramp blocked, elevator out, running 30 min late, or add a stop: the rest of the day re-plans.
 - **Compare**: the same request planned by "a normal map app" next to EazyRoam, with every problem listed.
 
-**Vacation**: list the places you want to see and a trip length (1 day, 3 days, 1 week). EazyRoam leaves out what isn't accessible, groups the rest into days by area, plans each day the same way, and lets you save trips and tick off "I've been here".
+**Vacation**: say which city you’re visiting and pick from its **top 15 sights** (with entrance access for each), add your own places, and choose a trip length (1 to 14 days). EazyRoam leaves out what isn't accessible, groups the rest into days by area, plans each day the same way, and lets you save trips and tick off "I've been here".
 
 ---
 
@@ -131,7 +131,7 @@ Env files are read only at start-up, so restart after editing `.env.local`. Only
 
 ```
 Browser (React, MapLibre)
-  │  POST /api/plan · /api/replan · /api/compare · /api/trip · GET /api/geocode
+  │  POST /api/plan · /api/replan · /api/compare · /api/trip · GET /api/geocode · /api/attractions
   ▼
 Next.js API routes (server; all keys stay here)
   ├─ Gemini ............ text → stops, stay minutes, set times, order (structured JSON)
