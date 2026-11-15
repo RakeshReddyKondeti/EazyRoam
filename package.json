@@ -5,6 +5,7 @@
   "scripts": {
     "predev": "npm run copy-map-worker",
     "dev": "next dev",
+    "dev:demo": "npm run copy-map-worker && USE_FIXTURES=1 next dev",
     "prebuild": "npm run copy-map-worker",
     "build": "next build",
     "start": "next start",
