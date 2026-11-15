@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Deploy EazyRoam to the Vultr VM. Owner: B.
-# Usage: VULTR_HOST=root@203.0.113.10 DOMAIN=eazyroam.app ./deploy/deploy.sh
+# Usage: ./deploy/deploy.sh   (defaults: our Vultr VM and eazyroam.us; set VULTR_HOST / DOMAIN to override)
 # Needs on the VM: Docker with the compose plugin. Needs locally: .env.production (real keys, USE_FIXTURES=0).
 # DNS: point the domain's A record (GoDaddy Registry) at the VM's IP before the first run, so Caddy can get a certificate.
 set -euo pipefail
 
-: "${VULTR_HOST:?set VULTR_HOST, e.g. root@203.0.113.10}"
-: "${DOMAIN:?set DOMAIN, e.g. eazyroam.app}"
+VULTR_HOST="${VULTR_HOST:-root@96.30.206.224}"
+DOMAIN="${DOMAIN:-eazyroam.us}"
 DIR=/opt/eazyroam
 cd "$(dirname "$0")/.."
 
